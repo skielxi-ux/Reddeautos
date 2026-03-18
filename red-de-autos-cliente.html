@@ -5561,32 +5561,39 @@
         errEl.textContent = 'Este código no es válido o ya fue usado. Solicitá uno nuevo al administrador.';
       };
 
-      // Verificar contra Firebase primero
-      if (window.fbValidarCodigo) {
-        const nextBtn = document.querySelector('.reg-step.active button.btn-primary');
-        if (nextBtn) { nextBtn.textContent = 'Verificando...'; nextBtn.disabled = true; }
-        window.fbValidarCodigo(codigoUpper).then(valido => {
-          if (nextBtn) { nextBtn.textContent = 'Continuar'; nextBtn.disabled = false; }
-          if (!valido) {
-            // Fallback: check local list
-            if (!_codigosValidos.includes(codigoUpper)) { mostrarErrorCodigo(); return; }
-          }
-          const errEl2 = document.getElementById('codigoError');
-          if (errEl2) errEl2.remove();
-          showRegStep(2);
-        }).catch(() => {
-          if (nextBtn) { nextBtn.textContent = 'Continuar'; nextBtn.disabled = false; }
-          // On error fallback to local validation
-          if (!_codigosValidos.includes(codigoUpper)) { mostrarErrorCodigo(); return; }
-          showRegStep(2);
-        });
-        return; // Wait for async
-      }
+      // Verificar código — siempre async para garantizar consistencia
+      const nextBtn = document.querySelector('.reg-step.active button.btn-primary');
+      if (nextBtn) { nextBtn.textContent = 'Verificando...'; nextBtn.disabled = true; }
 
-      // Fallback sin Firebase
-      if (!_codigosValidos.includes(codigoUpper)) { mostrarErrorCodigo(); return; }
-      const errEl2 = document.getElementById('codigoError');
-      if (errEl2) errEl2.remove();
+      const continuar = () => {
+        if (nextBtn) { nextBtn.textContent = 'Continuar'; nextBtn.disabled = false; }
+        const errEl2 = document.getElementById('codigoError');
+        if (errEl2) errEl2.remove();
+        showRegStep(2);
+      };
+      const fallar = () => {
+        if (nextBtn) { nextBtn.textContent = 'Continuar'; nextBtn.disabled = false; }
+        mostrarErrorCodigo();
+      };
+
+      // Intentar Firebase, con fallback a lista local
+      const validarAsync = window.fbValidarCodigo
+        ? window.fbValidarCodigo(codigoUpper)
+        : Promise.resolve(_codigosValidos.includes(codigoUpper));
+
+      validarAsync.then(valido => {
+        if (valido) { continuar(); }
+        else {
+          // Double-check local list as fallback
+          if (_codigosValidos.includes(codigoUpper)) { continuar(); }
+          else { fallar(); }
+        }
+      }).catch(() => {
+        // Firebase error — fallback to local
+        if (_codigosValidos.includes(codigoUpper)) { continuar(); }
+        else { fallar(); }
+      });
+      return; // Always async from here
     }
     if (step === 2) {
       const nombre   = document.getElementById('regNombre').value.trim();
