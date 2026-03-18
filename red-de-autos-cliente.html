@@ -5542,27 +5542,49 @@
       if (!codigo) { shakeInput('regCodigo'); return; }
       if (!nombre) { shakeInput('regNombreCon'); return; }
       if (!ciudad) { shakeInput('regCiudad'); return; }
-      // Validar código real
+      // Validar código contra Firebase
       const codigoUpper = codigo.toUpperCase();
-      if (!_codigosValidos.includes(codigoUpper)) {
+      const mostrarErrorCodigo = () => {
         const el = document.getElementById('regCodigo');
         el.style.borderColor = 'var(--red)';
         el.value = '';
         el.placeholder = 'Código inválido';
         el.style.animation = 'shake 0.35s ease';
         setTimeout(() => { el.style.animation=''; el.style.borderColor=''; el.placeholder='XXXXXXXX'; }, 1500);
-        // Mostrar error
         let errEl = document.getElementById('codigoError');
         if (!errEl) {
           errEl = document.createElement('div');
           errEl.id = 'codigoError';
           errEl.style.cssText = 'font-size:11px;color:var(--red);margin-top:5px;font-weight:500';
-          el.parentNode.appendChild(errEl);
+          document.getElementById('regCodigo').parentNode.appendChild(errEl);
         }
-        errEl.textContent = 'Este código no es válido o ya fue usado. Solicitá uno nuevo al equipo de Red de Autos.';
-        return;
+        errEl.textContent = 'Este código no es válido o ya fue usado. Solicitá uno nuevo al administrador.';
+      };
+
+      // Verificar contra Firebase primero
+      if (window.fbValidarCodigo) {
+        const nextBtn = document.querySelector('.reg-step.active button.btn-primary');
+        if (nextBtn) { nextBtn.textContent = 'Verificando...'; nextBtn.disabled = true; }
+        window.fbValidarCodigo(codigoUpper).then(valido => {
+          if (nextBtn) { nextBtn.textContent = 'Continuar'; nextBtn.disabled = false; }
+          if (!valido) {
+            // Fallback: check local list
+            if (!_codigosValidos.includes(codigoUpper)) { mostrarErrorCodigo(); return; }
+          }
+          const errEl2 = document.getElementById('codigoError');
+          if (errEl2) errEl2.remove();
+          showRegStep(2);
+        }).catch(() => {
+          if (nextBtn) { nextBtn.textContent = 'Continuar'; nextBtn.disabled = false; }
+          // On error fallback to local validation
+          if (!_codigosValidos.includes(codigoUpper)) { mostrarErrorCodigo(); return; }
+          showRegStep(2);
+        });
+        return; // Wait for async
       }
-      // Código OK — limpiar error si había
+
+      // Fallback sin Firebase
+      if (!_codigosValidos.includes(codigoUpper)) { mostrarErrorCodigo(); return; }
       const errEl2 = document.getElementById('codigoError');
       if (errEl2) errEl2.remove();
     }
