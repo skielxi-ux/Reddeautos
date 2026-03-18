@@ -3346,6 +3346,7 @@
     document.getElementById('page-' + name).classList.add('active');
     if (el) el.classList.add('active');
     if (name === 'seguimiento') renderSeguimiento();
+    if (name === 'red') renderRed();
     if (name === 'busquedas')   _renderBusquedasTable();
     if (name === 'dashboard')   _updateDashboard();
   }
@@ -4613,15 +4614,9 @@
     openModal('modalPagoExitoso');
   }
 
-  function filtrarRed(q) {
-    q = q.toLowerCase();
-    document.querySelectorAll('#redTable tr').forEach(row => {
-      row.style.display = row.textContent.toLowerCase().includes(q) ? '' : 'none';
-    });
-  }
+  function _filtrarRedDEPRECATED(q) { filtrarRed(q); }
 
-  function filtrarRedCiudad(ciudad) {
-    document.querySelectorAll('#redTable tr').forEach(row => {
+  function _filtrarRedCiudadDEPRECATED(ciudad) {(row => {
       row.style.display = (!ciudad || row.dataset.ciudad === ciudad) ? '' : 'none';
     });
   }
@@ -5519,12 +5514,88 @@
     _updateDashboard();
   }
 
+  // ── RENDER RED DE CONCESIONARIOS ──
+  let _redData = []; // agencias cargadas desde Firebase
+
+  function renderRed(agencias) {
+    if (agencias) _redData = agencias;
+    const tbody = document.getElementById('redTable');
+    if (!tbody) return;
+
+    // Solo agencias activas
+    const activas = _redData.filter(a => a.estado === 'activo');
+
+    // Stats
+    const statAg = document.getElementById('redStatAgencias');
+    if (statAg) statAg.textContent = activas.length;
+
+    if (activas.length === 0) {
+      tbody.innerHTML = '<tr><td colspan="7" style="text-align:center;color:var(--gray-400);padding:36px;font-size:12px">La red está vacía. Las agencias aparecerán aquí a medida que se sumen a la plataforma.</td></tr>';
+      return;
+    }
+
+    tbody.innerHTML = activas.map(a => {
+      const initials = a.initials || a.iniciales || (a.nombre||'').substring(0,2).toUpperCase();
+      const plan = a.plan === 'premium'
+        ? '<span class="badge badge-yellow">⭐ Premium</span>'
+        : '<span class="badge badge-gray">Free</span>';
+      return `<tr>
+        <td>
+          <div style="display:flex;align-items:center;gap:10px">
+            <div style="width:36px;height:36px;border-radius:8px;background:var(--red-light);display:flex;align-items:center;justify-content:center;font-weight:700;font-size:12px;color:var(--red);flex-shrink:0">${initials}</div>
+            <div>
+              <div style="font-weight:600;font-size:13px">${a.nombre||'—'}</div>
+              <div style="font-size:11px;color:var(--gray-400)">${a.email||''}</div>
+            </div>
+          </div>
+        </td>
+        <td>${a.ciudad||'—'}</td>
+        <td>${a.tipo||'Agencia'}</td>
+        <td><strong>${a.operaciones||0}</strong></td>
+        <td><span style="color:#F59E0B">★</span> ${a.calificacion||'Sin calificaciones'}</td>
+        <td><span class="badge badge-green"><span class="status-dot dot-green"></span>Activo</span></td>
+        <td>
+          <button class="btn btn-outline btn-sm" style="font-size:11px" onclick="verDetalleRed('${a.nombre}','${a.ciudad}','${a.contacto||a.nombre}','${a.tel||''}','${a.email||''}')">
+            Ver perfil
+          </button>
+        </td>
+      </tr>`;
+    }).join('');
+  }
+
+  function verDetalleRed(nombre, ciudad, contacto, tel, email) {
+    alert(`${nombre}
+${ciudad}
+Contacto: ${contacto}
+Tel: ${tel||'No disponible'}
+Email: ${email||'No disponible'}`);
+  }
+
+  function _filtrarRedDEPRECATED(q) { filtrarRed(q); }
+
+  function _filtrarRedCiudadDEPRECATED(ciudad) {(row => {
+      row.style.display = (!ciudad || row.textContent.includes(ciudad)) ? '' : 'none';
+    });
+  }
+
   function enterDashboard() {
     const screen = document.getElementById('authScreen');
     if (!screen) return;
     screen.style.transition = 'opacity 0.35s ease';
     screen.style.opacity = '0';
     setTimeout(() => { screen.style.display = 'none'; screen.style.opacity = '1'; }, 350);
+    // Cargar datos de la red desde Firebase
+    if (window.fbLoadDatosRed) {
+      window.fbLoadDatosRed().then(red => {
+        if (red && red.agencias) renderRed(red.agencias);
+      });
+      // Listener en tiempo real
+      if (window.fbListenDatos) {
+        window.fbListenDatos(red => {
+          if (red && red.agencias) renderRed(red.agencias);
+        });
+      }
+    }
   }
 
   function doLogout() {
