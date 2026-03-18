@@ -1089,12 +1089,13 @@
     };
 
     // ── Registro con Firebase ──
-    window.fbClientRegister = async function(email, pass, nombre, ciudad, iniciales) {
+    window.fbClientRegister = async function(email, pass, nombre, ciudad, iniciales, codigo) {
       try {
         const cred = await createUserWithEmailAndPassword(auth, email, pass);
         await updateProfile(cred.user, { displayName: nombre });
-        // Guardar perfil en Firestore
-        const { setDoc, doc: fbDoc } = await import("https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js");
+        const { setDoc, doc: fbDoc, getDoc: fbGetDoc, arrayUnion } = await import("https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js");
+        
+        // 1. Guardar perfil individual de la agencia
         await setDoc(fbDoc(db, 'agencias', cred.user.uid), {
           nombre, ciudad, iniciales,
           email,
@@ -1104,6 +1105,43 @@
           creadoEn: Date.now(),
           estado: 'activo'
         });
+
+        // 2. Agregar agencia a sistema/datos para que aparezca en el admin
+        const sysSnap = await fbGetDoc(fbDoc(db, 'sistema', 'datos'));
+        if (sysSnap.exists()) {
+          const sysData = sysSnap.data();
+          const agencias = JSON.parse(sysData.agencias || '[]');
+          const solicitudes = JSON.parse(sysData.solicitudes || '[]');
+          const codigos = JSON.parse(sysData.codigos || '[]');
+
+          // Agregar como solicitud pendiente
+          solicitudes.push({
+            id: Date.now(),
+            nombre, ciudad,
+            contacto: nombre,
+            email,
+            codigo: codigo || '',
+            fecha: new Date().toLocaleDateString('es-AR'),
+            estado: 'pendiente',
+            initials: iniciales,
+            uid: cred.user.uid
+          });
+
+          // Marcar código como usado
+          const codIdx = codigos.findIndex(c => c.codigo === (codigo||'').toUpperCase() && c.estado === 'disponible');
+          if (codIdx >= 0) {
+            codigos[codIdx].estado = 'usado';
+            codigos[codIdx].usadoPor = nombre;
+          }
+
+          await setDoc(fbDoc(db, 'sistema', 'datos'), {
+            ...sysData,
+            solicitudes: JSON.stringify(solicitudes),
+            codigos: JSON.stringify(codigos),
+            updatedAt: Date.now()
+          });
+        }
+
         return { ok: true, uid: cred.user.uid };
       } catch(e) {
         const msgs = {
@@ -5647,7 +5685,7 @@
     if (window.fbClientRegister) {
       const regBtn = document.querySelector('.reg-step.active .btn-primary');
       if (regBtn) { regBtn.textContent = 'Creando cuenta...'; regBtn.disabled = true; }
-      window.fbClientRegister(email, pwd, nombre, ciudad, ini).then(res => {
+      window.fbClientRegister(email, pwd, nombre, ciudad, ini, codigo).then(res => {
         if (regBtn) { regBtn.textContent = 'Crear cuenta'; regBtn.disabled = false; }
         if (!res.ok) { alert(res.msg); return; }
         // Mark code as used in Firestore (best effort)
