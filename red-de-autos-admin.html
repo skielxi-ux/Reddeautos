@@ -1106,8 +1106,10 @@ function saveData() {
   const data = { agencias, operaciones, matchesData, solicitudes, denuncias, codigos, pagos, vehiculos, config };
   localStorage.setItem(STORE_KEY, JSON.stringify(data));
   localStorage.setItem('redautos_client_sync', JSON.stringify({ agencias, operaciones, matchesData, vehiculos, config, updated: Date.now() }));
-  // Save to Firebase (async, non-blocking)
-  if (window.fbSaveAll) window.fbSaveAll(data);
+  // Save to Firebase automatically
+  if (window.fbSaveAll) {
+    window.fbSaveAll(data).catch(e => console.warn('Auto-save error:', e));
+  }
 }
 
 function loadData() {
@@ -1126,24 +1128,50 @@ function loadData() {
       config      = d.config      || getDefaultConfig();
     } catch(e) { resetToDefaults(); }
   } else { resetToDefaults(); }
-  // Also load from Firebase (overwrites localStorage with server data)
-  if (window.fbLoadAll) {
-    window.fbLoadAll().then(d => {
-      if (!d) return;
-      agencias    = d.agencias    || agencias;
-      operaciones = d.operaciones || operaciones;
-      matchesData = d.matchesData || matchesData;
-      solicitudes = d.solicitudes || solicitudes;
-      denuncias   = d.denuncias   || denuncias;
-      codigos     = d.codigos     || codigos;
-      pagos       = d.pagos       || pagos;
-      vehiculos   = d.vehiculos   || vehiculos;
-      config      = d.config      || config;
-      localStorage.setItem(STORE_KEY, JSON.stringify(d));
-      refreshData();
-      showToast('Datos sincronizados con Firebase ☁️', 'green');
-    }).catch(e => console.warn('Firebase load error:', e));
+}
+
+// Carga desde Firebase — se llama después del login exitoso
+async function loadDataFromFirebase() {
+  if (!window.fbLoadAll) return;
+  try {
+    const d = await window.fbLoadAll();
+    if (!d) return;
+    agencias    = d.agencias    && d.agencias.length    ? d.agencias    : agencias;
+    operaciones = d.operaciones && d.operaciones.length ? d.operaciones : operaciones;
+    matchesData = d.matchesData && d.matchesData.length ? d.matchesData : matchesData;
+    solicitudes = d.solicitudes && d.solicitudes.length ? d.solicitudes : solicitudes;
+    denuncias   = d.denuncias   && d.denuncias.length   ? d.denuncias   : denuncias;
+    codigos     = d.codigos     && d.codigos.length     ? d.codigos     : codigos;
+    pagos       = d.pagos       && d.pagos.length       ? d.pagos       : pagos;
+    vehiculos   = d.vehiculos   && d.vehiculos.length   ? d.vehiculos   : vehiculos;
+    config      = d.config      && Object.keys(d.config).length ? d.config : config;
+    localStorage.setItem(STORE_KEY, JSON.stringify({agencias,operaciones,matchesData,solicitudes,denuncias,codigos,pagos,vehiculos,config}));
+    refreshData();
+    showToast('✅ Datos sincronizados desde Firebase', 'green');
+    // Iniciar listener en tiempo real
+    startFirebaseListener();
+  } catch(e) {
+    console.warn('Firebase load error:', e);
+    showToast('Sin conexión a Firebase — usando datos locales', 'yellow');
   }
+}
+
+// Listener en tiempo real — actualiza el panel automáticamente
+let _fbUnsubscribe = null;
+function startFirebaseListener() {
+  if (!window.fbListen || _fbUnsubscribe) return;
+  _fbUnsubscribe = window.fbListen(d => {
+    // Solo actualizar solicitudes y códigos en tiempo real (lo que cambia desde el cliente)
+    if (d.solicitudes && d.solicitudes.length >= solicitudes.length) {
+      solicitudes = d.solicitudes;
+    }
+    if (d.codigos && d.codigos.length >= codigos.length) {
+      codigos = d.codigos;
+    }
+    updateNavBadges();
+    renderSolicitudes();
+    renderCodigos();
+  });
 }
 
 function getDefaultConfig() {
@@ -1173,10 +1201,18 @@ function adminLogin() {
   const validPasses = ['admin123','admin'];
   // Try Firebase Auth first, fallback to demo credentials
   const loginAndEnter = () => {
+    window._lastAdminEmail = email;
+    window._lastAdminPass = pass;
     document.getElementById('adminNameDisplay').textContent = email.split('@')[0];
     const screen=document.getElementById('adminLogin');
     screen.style.transition='opacity 0.3s';screen.style.opacity='0';
-    setTimeout(()=>{screen.style.display='none';document.getElementById('adminApp').style.display='flex';refreshData();},300);
+    setTimeout(()=>{
+      screen.style.display='none';
+      document.getElementById('adminApp').style.display='flex';
+      loadData();
+      refreshData();
+      loadDataFromFirebase();
+    },300);
   };
   if (window.adminLoginFirebase) {
     const btn = document.querySelector('#adminLogin .btn-primary');
