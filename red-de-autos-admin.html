@@ -243,12 +243,19 @@
     window._fb   = { collection, doc, setDoc, getDoc, getDocs, onSnapshot, deleteDoc, updateDoc, query, orderBy };
 
     // ── FIREBASE AUTH for Admin ──
+    // Exponer signIn globalmente
+    window._signInWithEmail = (email, pass) => signInWithEmailAndPassword(auth, email, pass);
+    window._signOutFirebase = () => signOut(auth);
+
     window.adminLoginFirebase = async function(email, pass) {
       try {
-        await signInWithEmailAndPassword(auth, email, pass);
+        const cred = await signInWithEmailAndPassword(auth, email, pass);
+        window._fbUser = cred.user;
+        console.log('✅ Firebase Auth OK:', cred.user.email);
         return { ok: true };
       } catch(e) {
-        return { ok: false, msg: e.code === 'auth/invalid-credential' ? 'Email o contraseña incorrectos.' : e.message };
+        console.warn('Firebase Auth error:', e.code, e.message);
+        return { ok: false, msg: e.code === 'auth/invalid-credential' || e.code === 'auth/wrong-password' ? 'Email o contraseña incorrectos.' : e.message };
       }
     };
 
@@ -259,6 +266,14 @@
     // ── FIRESTORE SAVE ──
     window.fbSaveAll = async function(data) {
       try {
+        const user = auth.currentUser;
+        if (!user) {
+          console.warn('fbSaveAll: no hay usuario autenticado');
+          // Try to re-auth if we have stored credentials
+          if (window._lastAdminEmail && window._lastAdminPass) {
+            await signInWithEmailAndPassword(auth, window._lastAdminEmail, window._lastAdminPass);
+          }
+        }
         await setDoc(doc(db, 'sistema', 'datos'), {
           agencias:    JSON.stringify(data.agencias    || []),
           operaciones: JSON.stringify(data.operaciones || []),
