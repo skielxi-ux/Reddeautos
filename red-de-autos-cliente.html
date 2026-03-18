@@ -5517,7 +5517,7 @@
   // ── RENDER RED DE CONCESIONARIOS ──
   let _redData = []; // agencias cargadas desde Firebase
 
-  function renderRed(agencias) {
+  window.renderRed = function renderRed(agencias) {
     if (agencias) _redData = agencias;
     const tbody = document.getElementById('redTable');
     if (!tbody) return;
@@ -5563,7 +5563,7 @@
     }).join('');
   }
 
-  function verDetalleRed(nombre, ciudad, contacto, tel, email) {
+  window.verDetalleRed = function verDetalleRed(nombre, ciudad, contacto, tel, email) {
     alert(`${nombre}
 ${ciudad}
 Contacto: ${contacto}
