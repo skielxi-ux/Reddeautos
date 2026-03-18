@@ -1,0 +1,2089 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Red de Autos · Admin</title>
+<link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  :root {
+    --red: #E8192C; --red-dark: #C0142A; --red-light: #fff0f2;
+    --gray-50:#F9FAFB;--gray-100:#F3F4F6;--gray-200:#E5E7EB;--gray-300:#D1D5DB;
+    --gray-400:#9CA3AF;--gray-500:#6B7280;--gray-600:#4B5563;--gray-700:#374151;--gray-900:#111827;
+    --green:#16A34A;--green-light:#F0FDF4;
+    --yellow:#CA8A04;--yellow-light:#FEFCE8;
+    --blue:#2563EB;--blue-light:#EFF6FF;
+    --purple:#7C3AED;--purple-light:#F5F3FF;
+    --radius:12px;--radius-sm:8px;
+    --shadow:0 1px 3px rgba(0,0,0,0.08),0 1px 2px rgba(0,0,0,0.04);
+    --shadow-md:0 4px 6px rgba(0,0,0,0.07),0 2px 4px rgba(0,0,0,0.04);
+    --shadow-lg:0 10px 15px rgba(0,0,0,0.08),0 4px 6px rgba(0,0,0,0.04);
+  }
+  body { font-family:'Poppins',sans-serif; background:var(--gray-50); color:var(--gray-900); min-height:100vh; font-size:14px; }
+
+  /* LOGIN */
+  .login-screen { position:fixed;inset:0;z-index:500;background:var(--gray-50);display:flex;align-items:stretch; }
+  .login-left { width:440px;flex-shrink:0;background:#fff;display:flex;flex-direction:column;padding:40px 44px;box-shadow:4px 0 24px rgba(0,0,0,0.06);overflow-y:auto; }
+  .login-logo { display:flex;align-items:center;gap:12px;margin-bottom:40px; }
+  .login-logo-icon { width:40px;height:40px;background:var(--red);border-radius:10px;display:flex;align-items:center;justify-content:center;color:#fff;font-weight:800;font-size:14px;letter-spacing:-0.5px; }
+  .login-logo-text { font-size:18px;font-weight:700;color:var(--gray-900); }
+  .login-logo-sub  { font-size:11px;color:var(--gray-400);margin-top:1px; }
+  .login-title { font-size:22px;font-weight:700;color:var(--gray-900);margin-bottom:6px; }
+  .login-sub   { font-size:13px;color:var(--gray-500);line-height:1.6;margin-bottom:28px; }
+  .form-group  { margin-bottom:14px; }
+  .form-label  { font-size:12px;font-weight:500;color:var(--gray-600);margin-bottom:5px;display:block; }
+  .form-control { width:100%;padding:9px 12px;border:1px solid var(--gray-200);border-radius:var(--radius-sm);font-family:'Poppins',sans-serif;font-size:13px;color:var(--gray-900);outline:none;transition:border-color 0.15s; }
+  .form-control:focus { border-color:var(--red); }
+  select.form-control { cursor:pointer; }
+  .login-badge { display:inline-flex;align-items:center;gap:6px;background:var(--red-light);color:var(--red);border:1px solid rgba(232,25,44,0.2);border-radius:20px;padding:4px 10px;font-size:11px;font-weight:600;margin-bottom:8px; }
+  .login-right { flex:1;position:relative;overflow:hidden;background:linear-gradient(145deg,#1a0a0c 0%,#2d0d11 40%,#E8192C 100%);display:flex;flex-direction:column;align-items:center;justify-content:center;padding:60px 50px;color:#fff; }
+  .login-right-pattern { position:absolute;inset:0;opacity:0.06;background-image:radial-gradient(circle,#fff 1px,transparent 1px);background-size:32px 32px; }
+  .login-right-content { position:relative;z-index:1;max-width:400px; }
+  .login-feature { display:flex;align-items:flex-start;gap:14px;margin-bottom:24px; }
+  .login-feature-icon { width:38px;height:38px;border-radius:10px;background:rgba(255,255,255,0.15);display:flex;align-items:center;justify-content:center;flex-shrink:0;margin-top:2px; }
+  .login-feature-title { font-size:14px;font-weight:700;margin-bottom:3px; }
+  .login-feature-desc  { font-size:12px;opacity:0.7;line-height:1.6; }
+  .login-footer { margin-top:auto;padding-top:28px;font-size:11px;color:var(--gray-400);text-align:center;line-height:1.7; }
+  .pwd-wrap { position:relative; }
+  .pwd-wrap input { padding-right:40px; }
+  .pwd-toggle { position:absolute;right:12px;top:50%;transform:translateY(-50%);background:none;border:none;cursor:pointer;color:var(--gray-400);display:flex;align-items:center;padding:0; }
+  .login-stat { background:var(--gray-50);border:1px solid var(--gray-200);border-radius:var(--radius-sm);padding:10px 14px;display:flex;align-items:center;gap:10px; }
+  .login-stat-val { font-size:18px;font-weight:700;color:var(--gray-900); }
+  .login-stat-lbl { font-size:11px;color:var(--gray-400); }
+  .error-msg { background:var(--red-light);border:1px solid rgba(232,25,44,0.3);border-radius:var(--radius-sm);padding:10px 14px;font-size:12px;color:var(--red);font-weight:500;margin-bottom:14px;display:none; }
+  .error-msg.visible { display:block; }
+
+  /* LAYOUT */
+  .layout { display:flex;min-height:100vh; }
+  .sidebar { width:240px;background:#fff;border-right:1px solid var(--gray-200);display:flex;flex-direction:column;position:fixed;top:0;left:0;bottom:0;z-index:100; }
+  .sidebar-logo { padding:20px 20px 14px;border-bottom:1px solid var(--gray-100); }
+  .logo-badge { display:flex;align-items:center;gap:10px; }
+  .logo-icon { width:36px;height:36px;background:var(--red);border-radius:10px;display:flex;align-items:center;justify-content:center;color:#fff;font-weight:800;font-size:13px;letter-spacing:-0.5px; }
+  .logo-text { font-weight:700;font-size:14px;color:var(--gray-900);line-height:1.2; }
+  .logo-sub { font-size:10px;color:var(--gray-400); }
+  .admin-badge-sidebar { margin:10px 20px;background:linear-gradient(135deg,var(--red-light),#ffd6da);border:1px solid rgba(232,25,44,0.25);border-radius:20px;padding:5px 12px;font-size:11px;font-weight:700;color:var(--red);display:flex;align-items:center;gap:6px; }
+  .nav { padding:8px 12px;flex:1;overflow-y:auto; }
+  .nav-section { font-size:10px;font-weight:700;color:var(--gray-400);text-transform:uppercase;letter-spacing:0.08em;padding:12px 10px 4px; }
+  .nav-item { display:flex;align-items:center;gap:10px;padding:9px 10px;border-radius:var(--radius-sm);color:var(--gray-500);font-size:13px;font-weight:500;cursor:pointer;margin-bottom:2px;transition:all 0.15s;border:none;background:none;width:100%;text-align:left; }
+  .nav-item:hover { background:var(--gray-50);color:var(--gray-700); }
+  .nav-item.active { background:var(--red-light);color:var(--red); }
+  .nav-item svg { width:16px;height:16px;flex-shrink:0; }
+  .nav-badge { margin-left:auto;background:var(--red);color:#fff;border-radius:20px;padding:1px 7px;font-size:10px;font-weight:700; }
+  .nav-badge.yellow { background:var(--yellow); }
+  .nav-badge.blue   { background:var(--blue); }
+  .sidebar-footer { padding:14px 20px;border-top:1px solid var(--gray-100);display:flex;align-items:center;gap:10px; }
+  .admin-avatar { width:32px;height:32px;border-radius:8px;background:var(--red);display:flex;align-items:center;justify-content:center;color:#fff;font-weight:700;font-size:11px;flex-shrink:0; }
+  .admin-name { font-size:12px;font-weight:600;color:var(--gray-700); }
+  .admin-role { font-size:10px;color:var(--gray-400); }
+
+  /* MAIN */
+  .main { margin-left:240px;flex:1; }
+  .topbar { background:#fff;border-bottom:1px solid var(--gray-200);padding:0 28px;height:60px;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:50; }
+  .topbar-title { font-size:16px;font-weight:600;color:var(--gray-900); }
+  .topbar-sub   { font-size:12px;color:var(--gray-400);margin-top:1px; }
+  .topbar-actions { display:flex;align-items:center;gap:10px; }
+  .content { padding:24px 28px; }
+
+  /* COMPONENTS */
+  .btn { display:inline-flex;align-items:center;gap:6px;padding:8px 16px;border-radius:var(--radius-sm);font-family:'Poppins',sans-serif;font-size:13px;font-weight:500;cursor:pointer;transition:all 0.15s;border:none; }
+  .btn-primary { background:var(--red);color:#fff; }
+  .btn-primary:hover { background:var(--red-dark); }
+  .btn-outline { background:#fff;border:1px solid var(--gray-200);color:var(--gray-600); }
+  .btn-outline:hover { border-color:var(--gray-300);background:var(--gray-50); }
+  .btn-green { background:var(--green);color:#fff; }
+  .btn-green:hover { background:#15803D; }
+  .btn-sm { padding:6px 12px;font-size:12px; }
+  .btn:disabled { opacity:0.5;cursor:not-allowed; }
+
+  .stats-grid { display:grid;grid-template-columns:repeat(4,1fr);gap:16px;margin-bottom:24px; }
+  .stat-card { background:#fff;border:1px solid var(--gray-200);border-radius:var(--radius);padding:18px 20px;display:flex;align-items:center;justify-content:space-between;box-shadow:var(--shadow); }
+  .stat-label { font-size:11px;font-weight:600;color:var(--gray-400);text-transform:uppercase;letter-spacing:0.06em;margin-bottom:4px; }
+  .stat-value { font-size:28px;font-weight:700;color:var(--gray-900);line-height:1; }
+  .stat-change { font-size:11px;color:var(--green);font-weight:500;margin-top:4px; }
+  .stat-change.neutral { color:var(--gray-400); }
+  .stat-icon { width:44px;height:44px;border-radius:12px;display:flex;align-items:center;justify-content:center;flex-shrink:0; }
+  .stat-icon svg { width:22px;height:22px; }
+
+  .card { background:#fff;border:1px solid var(--gray-200);border-radius:var(--radius);box-shadow:var(--shadow);overflow:hidden; }
+  .card-header { padding:16px 20px;border-bottom:1px solid var(--gray-100);display:flex;align-items:center;justify-content:space-between; }
+  .card-title { font-size:14px;font-weight:600;color:var(--gray-900); }
+  .card-sub   { font-size:12px;color:var(--gray-400);margin-top:2px; }
+
+  table { width:100%;border-collapse:collapse; }
+  th { padding:10px 16px;text-align:left;font-size:11px;font-weight:600;color:var(--gray-400);text-transform:uppercase;letter-spacing:0.06em;border-bottom:1px solid var(--gray-100);background:var(--gray-50); }
+  td { padding:12px 16px;border-bottom:1px solid var(--gray-100);font-size:13px;color:var(--gray-700); }
+  tr:last-child td { border-bottom:none; }
+  tr:hover td { background:var(--gray-50); }
+
+  .badge { display:inline-flex;align-items:center;gap:4px;padding:3px 9px;border-radius:20px;font-size:11px;font-weight:600; }
+  .badge-green  { background:var(--green-light);color:var(--green);border:1px solid #86EFAC; }
+  .badge-red    { background:var(--red-light);color:var(--red);border:1px solid #FECACA; }
+  .badge-yellow { background:var(--yellow-light);color:var(--yellow);border:1px solid #FDE68A; }
+  .badge-blue   { background:var(--blue-light);color:var(--blue);border:1px solid #93C5FD; }
+  .badge-gray   { background:var(--gray-100);color:var(--gray-500);border:1px solid var(--gray-200); }
+  .badge-purple { background:var(--purple-light);color:var(--purple);border:1px solid #C4B5FD; }
+  .status-dot { width:6px;height:6px;border-radius:50%;display:inline-block; }
+  .dot-green { background:var(--green); }
+  .dot-red   { background:var(--red); }
+  .dot-yellow { background:#F59E0B; }
+  .dot-gray  { background:var(--gray-300); }
+
+  .page { display:none; }
+  .page.active { display:block; }
+
+  .search-bar { display:flex;align-items:center;gap:8px;background:var(--gray-50);border:1px solid var(--gray-200);border-radius:var(--radius-sm);padding:7px 12px; }
+  .search-bar svg { width:14px;height:14px;color:var(--gray-400);flex-shrink:0; }
+  .search-bar input { border:none;background:none;outline:none;font-family:'Poppins',sans-serif;font-size:13px;color:var(--gray-900);min-width:0;width:180px; }
+  .search-bar input::placeholder { color:var(--gray-400); }
+
+  /* MODAL */
+  .modal-overlay { position:fixed;inset:0;background:rgba(0,0,0,0.4);z-index:200;display:none;align-items:center;justify-content:center;backdrop-filter:blur(2px); }
+  .modal-overlay.active { display:flex; }
+  .modal { background:#fff;border-radius:var(--radius);box-shadow:var(--shadow-lg);width:540px;max-width:95vw;max-height:90vh;overflow-y:auto; }
+  .modal-header { padding:16px 20px;border-bottom:1px solid var(--gray-100);display:flex;align-items:center;justify-content:space-between; }
+  .modal-title  { font-size:15px;font-weight:700;color:var(--gray-900); }
+  .modal-close  { background:none;border:none;cursor:pointer;color:var(--gray-400);padding:4px;border-radius:6px;display:flex; }
+  .modal-close:hover { background:var(--gray-100); }
+  .modal-body   { padding:20px; }
+
+  /* TOGGLE */
+  .toggle { position:relative;display:inline-block;width:40px;height:22px;cursor:pointer; }
+  .toggle input { opacity:0;width:0;height:0; }
+  .toggle-slider { position:absolute;inset:0;background:var(--gray-200);border-radius:11px;transition:0.2s; }
+  .toggle-slider::before { content:'';position:absolute;height:16px;width:16px;left:3px;bottom:3px;background:#fff;border-radius:50%;transition:0.2s; }
+  .toggle input:checked + .toggle-slider { background:var(--green); }
+  .toggle input:checked + .toggle-slider::before { transform:translateX(18px); }
+
+  /* ALERTS */
+  .alert-banner { padding:12px 16px;border-radius:var(--radius-sm);font-size:13px;margin-bottom:10px;display:flex;align-items:center;gap:10px; }
+  .alert-warning { background:var(--yellow-light);border:1px solid #FDE68A;color:var(--yellow); }
+  .alert-danger  { background:var(--red-light);border:1px solid #FECACA;color:var(--red); }
+  .alert-info    { background:var(--blue-light);border:1px solid #93C5FD;color:var(--blue); }
+  .alert-success { background:var(--green-light);border:1px solid #86EFAC;color:var(--green); }
+
+  /* CHARTS */
+  .chart-bar-wrap  { display:flex;flex-direction:column;gap:10px; }
+  .chart-bar-row   { display:flex;align-items:center;gap:10px; }
+  .chart-bar-label { font-size:12px;color:var(--gray-600);width:130px;flex-shrink:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis; }
+  .chart-bar-track { flex:1;height:8px;background:var(--gray-100);border-radius:4px;overflow:hidden; }
+  .chart-bar-fill  { height:100%;border-radius:4px;transition:width 0.5s ease; }
+  .chart-bar-val   { font-size:12px;font-weight:600;color:var(--gray-700);width:30px;text-align:right; }
+
+  /* ACTIVITY */
+  .activity-item { display:flex;align-items:flex-start;gap:12px;padding:12px 0;border-bottom:1px solid var(--gray-100); }
+  .activity-item:last-child { border-bottom:none; }
+  .activity-text { font-size:13px;color:var(--gray-700);line-height:1.5; }
+  .activity-time { font-size:11px;color:var(--gray-400);margin-top:2px; }
+
+  /* DETAIL PANEL */
+  .detail-row { display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:14px; }
+  .detail-field-lbl { font-size:11px;font-weight:600;color:var(--gray-400);text-transform:uppercase;margin-bottom:4px; }
+  .detail-field-val { font-size:13px;font-weight:500;color:var(--gray-900); }
+
+  /* BREADCRUMB */
+  .topbar-info { display:flex;flex-direction:column; }
+
+  /* EMPTY STATE */
+  .empty-state { text-align:center;padding:60px 20px;color:var(--gray-400); }
+  .empty-state svg { display:block;margin:0 auto 14px;opacity:0.3; }
+  .empty-state-title { font-size:14px;font-weight:600;color:var(--gray-600);margin-bottom:6px; }
+  .empty-state-sub   { font-size:12px; }
+
+  /* INPUT GROUP */
+  .input-group { display:flex;gap:8px;align-items:center; }
+  .input-group .form-control { flex:1; }
+
+  @keyframes slideUp { from { transform:translateY(10px);opacity:0; } to { transform:translateY(0);opacity:1; } }
+  @keyframes fadeIn  { from { opacity:0; } to { opacity:1; } }
+  .page.active { animation:fadeIn 0.2s ease; }
+
+  /* TABS */
+  .tabs { display:flex;gap:4px;background:var(--gray-100);border-radius:var(--radius-sm);padding:3px;width:fit-content;margin-bottom:20px; }
+  .tab { padding:6px 14px;border-radius:6px;font-size:12px;font-weight:500;cursor:pointer;transition:all 0.15s;border:none;background:none;color:var(--gray-500); }
+  .tab.active { background:#fff;color:var(--gray-900);box-shadow:var(--shadow); }
+
+  /* REVENUE BARS */
+  .rev-chart { display:flex;align-items:flex-end;gap:6px;height:100px;padding-top:12px; }
+  .rev-bar-wrap { flex:1;display:flex;flex-direction:column;align-items:center;gap:4px; }
+  .rev-bar { width:100%;border-radius:4px 4px 0 0;min-height:4px;transition:height 0.5s ease; }
+  .rev-label { font-size:9px;color:var(--gray-400); }
+
+  /* LINK */
+  a.link { color:var(--blue);text-decoration:none;font-weight:500; }
+  a.link:hover { text-decoration:underline; }
+
+  /* SYNC INDICATOR */
+  .sync-dot { width:8px;height:8px;border-radius:50%;background:var(--green);display:inline-block;margin-right:6px;animation:pulse 2s infinite; }
+  @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:0.4} }
+</style>
+
+  <!-- Firebase SDK -->
+  <script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
+    import { getFirestore, collection, doc, setDoc, getDoc, getDocs, onSnapshot, deleteDoc, updateDoc, query, orderBy } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
+    import { getAuth, signInWithEmailAndPassword, signOut, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
+
+    const firebaseConfig = {
+      apiKey: "AIzaSyAdUTQeSr1_OhCJjyfy25Mb0WyBY0PgmX8",
+      authDomain: "red-de-autos-8df76.firebaseapp.com",
+      projectId: "red-de-autos-8df76",
+      storageBucket: "red-de-autos-8df76.firebasestorage.app",
+      messagingSenderId: "191799331953",
+      appId: "1:191799331953:web:908a4448c27c73cd66dfd0"
+    };
+
+    const app = initializeApp(firebaseConfig);
+    const db  = getFirestore(app);
+    const auth = getAuth(app);
+
+    // Expose to global scope for non-module scripts
+    window._db   = db;
+    window._auth = auth;
+    window._fb   = { collection, doc, setDoc, getDoc, getDocs, onSnapshot, deleteDoc, updateDoc, query, orderBy };
+
+    // ── FIREBASE AUTH for Admin ──
+    window.adminLoginFirebase = async function(email, pass) {
+      try {
+        await signInWithEmailAndPassword(auth, email, pass);
+        return { ok: true };
+      } catch(e) {
+        return { ok: false, msg: e.code === 'auth/invalid-credential' ? 'Email o contraseña incorrectos.' : e.message };
+      }
+    };
+
+    window.adminLogoutFirebase = async function() {
+      await signOut(auth);
+    };
+
+    // ── FIRESTORE SAVE ──
+    window.fbSaveAll = async function(data) {
+      try {
+        await setDoc(doc(db, 'sistema', 'datos'), {
+          agencias:    JSON.stringify(data.agencias    || []),
+          operaciones: JSON.stringify(data.operaciones || []),
+          matchesData: JSON.stringify(data.matchesData || []),
+          solicitudes: JSON.stringify(data.solicitudes || []),
+          denuncias:   JSON.stringify(data.denuncias   || []),
+          codigos:     JSON.stringify(data.codigos     || []),
+          pagos:       JSON.stringify(data.pagos       || []),
+          vehiculos:   JSON.stringify(data.vehiculos   || []),
+          config:      JSON.stringify(data.config      || {}),
+          updatedAt:   Date.now()
+        });
+      } catch(e) { console.warn('Firebase save error:', e); }
+    };
+
+    window.fbLoadAll = async function() {
+      try {
+        const snap = await getDoc(doc(db, 'sistema', 'datos'));
+        if (!snap.exists()) return null;
+        const d = snap.data();
+        return {
+          agencias:    JSON.parse(d.agencias    || '[]'),
+          operaciones: JSON.parse(d.operaciones || '[]'),
+          matchesData: JSON.parse(d.matchesData || '[]'),
+          solicitudes: JSON.parse(d.solicitudes || '[]'),
+          denuncias:   JSON.parse(d.denuncias   || '[]'),
+          codigos:     JSON.parse(d.codigos     || '[]'),
+          pagos:       JSON.parse(d.pagos       || '[]'),
+          vehiculos:   JSON.parse(d.vehiculos   || '[]'),
+          config:      JSON.parse(d.config      || '{}'),
+        };
+      } catch(e) { console.warn('Firebase load error:', e); return null; }
+    };
+
+    // ── REALTIME LISTENER ──
+    window.fbListen = function(callback) {
+      return onSnapshot(doc(db, 'sistema', 'datos'), (snap) => {
+        if (snap.exists()) {
+          const d = snap.data();
+          callback({
+            agencias:    JSON.parse(d.agencias    || '[]'),
+            operaciones: JSON.parse(d.operaciones || '[]'),
+            matchesData: JSON.parse(d.matchesData || '[]'),
+            solicitudes: JSON.parse(d.solicitudes || '[]'),
+            denuncias:   JSON.parse(d.denuncias   || '[]'),
+            codigos:     JSON.parse(d.codigos     || '[]'),
+            pagos:       JSON.parse(d.pagos       || '[]'),
+            vehiculos:   JSON.parse(d.vehiculos   || '[]'),
+            config:      JSON.parse(d.config      || '{}'),
+          });
+        }
+      });
+    };
+
+    // Auth state - for admin auto-login check
+    onAuthStateChanged(auth, (user) => {
+      window._fbUser = user;
+    });
+
+    console.log('🔥 Firebase Admin inicializado');
+  </script>
+
+</head>
+<body>
+
+<!-- ==================== LOGIN ==================== -->
+<div class="login-screen" id="adminLogin">
+  <div class="login-left">
+    <div class="login-logo">
+      <div class="login-logo-icon">RA</div>
+      <div><div class="login-logo-text">Red de Autos</div><div class="login-logo-sub">Panel Administrativo</div></div>
+    </div>
+    <div class="login-badge">
+      <svg width="10" height="10" viewBox="0 0 24 24" fill="currentColor"><path d="M12 1L3 5v6c0 5.55 3.84 10.74 9 12 5.16-1.26 9-6.45 9-12V5l-9-4z"/></svg>
+      Acceso restringido · Admin
+    </div>
+    <div class="login-title">Bienvenido de vuelta</div>
+    <div class="login-sub">Ingresá con tus credenciales de administrador para acceder al panel de control.</div>
+    <div id="loginError" class="error-msg">Email o contraseña incorrectos.</div>
+    <div class="form-group">
+      <label class="form-label">Email</label>
+      <input class="form-control" id="adminEmail" type="email" placeholder="reddeautostuc@gmail.com" autocomplete="username">
+    </div>
+    <div class="form-group">
+      <label class="form-label">Contraseña</label>
+      <div class="pwd-wrap">
+        <input class="form-control" id="adminPass" type="password" placeholder="••••••••" autocomplete="current-password">
+        <button class="pwd-toggle" onclick="toggleAdminPwd()" type="button">
+          <svg id="eyeAdmin" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/>
+          </svg>
+        </button>
+      </div>
+    </div>
+    <button class="btn btn-primary" style="width:100%;justify-content:center;margin-top:4px;padding:10px" onclick="adminLogin()">
+      Ingresar al panel
+    </button>
+    <div style="margin-top:16px;padding:10px 14px;background:var(--gray-50);border-radius:var(--radius-sm);font-size:11px;color:var(--gray-500)">
+      Demo: <strong><a href="/cdn-cgi/l/email-protection" class="__cf_email__" data-cfemail="e180858c888fa193848585848094958e92cf828e8c">[email&#160;protected]</a></strong> / <strong>admin123</strong>
+    </div>
+    <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-top:20px">
+      <div class="login-stat"><div><div class="login-stat-val" id="loginStatAg">0</div><div class="login-stat-lbl">Agencias</div></div></div>
+      <div class="login-stat"><div><div class="login-stat-val" id="loginStatOp">0</div><div class="login-stat-lbl">Operaciones</div></div></div>
+      <div class="login-stat"><div><div class="login-stat-val" id="loginStatIng">$0</div><div class="login-stat-lbl">Ingresos</div></div></div>
+    </div>
+    <div class="login-footer">Red de Autos © 2025 · Panel Administrativo v2.0<br>Todos los accesos quedan registrados.</div>
+  </div>
+  <div class="login-right">
+    <div class="login-right-pattern"></div>
+    <div class="login-right-content">
+      <div style="font-size:28px;font-weight:800;margin-bottom:8px;letter-spacing:-1px">Control total de la red</div>
+      <div style="font-size:14px;opacity:0.7;margin-bottom:36px;line-height:1.7">Gestioná agencias, operaciones, matches e ingresos desde un único panel.</div>
+      <div class="login-feature">
+        <div class="login-feature-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75"/></svg></div>
+        <div><div class="login-feature-title">Gestión de agencias</div><div class="login-feature-desc">Alta, baja, planes y créditos de cada agencia en tiempo real.</div></div>
+      </div>
+      <div class="login-feature">
+        <div class="login-feature-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2"><circle cx="12" cy="5" r="3"/><circle cx="4" cy="19" r="3"/><circle cx="20" cy="19" r="3"/><line x1="12" y1="8" x2="4" y2="16"/><line x1="12" y1="8" x2="20" y2="16"/></svg></div>
+        <div><div class="login-feature-title">Motor de matches</div><div class="login-feature-desc">Visualizá y gestioná todos los matches generados automáticamente.</div></div>
+      </div>
+      <div class="login-feature">
+        <div class="login-feature-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg></div>
+        <div><div class="login-feature-title">Ingresos en tiempo real</div><div class="login-feature-desc">Suscripciones Premium y créditos vendidos por cada agencia.</div></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ==================== APP ==================== -->
+<div class="layout" id="adminApp" style="display:none">
+
+  <!-- SIDEBAR -->
+  <aside class="sidebar">
+    <div class="sidebar-logo">
+      <div class="logo-badge">
+        <div class="logo-icon">RA</div>
+        <div><div class="logo-text">Red de Autos</div><div class="logo-sub">Tucumán y el Norte</div></div>
+      </div>
+    </div>
+    <div class="admin-badge-sidebar">
+      <svg width="10" height="10" viewBox="0 0 24 24" fill="currentColor"><path d="M12 1L3 5v6c0 5.55 3.84 10.74 9 12 5.16-1.26 9-6.45 9-12V5l-9-4z"/></svg>
+      Panel Admin
+    </div>
+    <nav class="nav">
+      <div class="nav-section">Principal</div>
+      <button class="nav-item active" onclick="showAdminPage('dashboard',this)">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></svg>
+        Dashboard
+      </button>
+
+      <div class="nav-section">Red</div>
+      <button class="nav-item" onclick="showAdminPage('agencias',this)">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/></svg>
+        Agencias
+        <span class="nav-badge" id="navBadgeAgencias">0</span>
+      </button>
+      <button class="nav-item" onclick="showAdminPage('solicitudes',this)">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M16 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="8.5" cy="7" r="4"/><line x1="20" y1="8" x2="20" y2="14"/><line x1="23" y1="11" x2="17" y2="11"/></svg>
+        Solicitudes
+        <span class="nav-badge yellow" id="navBadgeSolicitudes">0</span>
+      </button>
+      <button class="nav-item" onclick="showAdminPage('denuncias',this)">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/></svg>
+        Denuncias
+        <span class="nav-badge" id="navBadgeDenuncias">0</span>
+      </button>
+
+      <div class="nav-section">Operaciones</div>
+      <button class="nav-item" onclick="showAdminPage('operaciones',this)">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22,4 12,14.01 9,11.01"/></svg>
+        Operaciones
+      </button>
+      <button class="nav-item" onclick="showAdminPage('matches',this)">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="5" r="3"/><circle cx="4" cy="19" r="3"/><circle cx="20" cy="19" r="3"/><line x1="12" y1="8" x2="4" y2="16"/><line x1="12" y1="8" x2="20" y2="16"/></svg>
+        Matches
+      </button>
+      <button class="nav-item" onclick="showAdminPage('vehiculos',this)">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="1" y="3" width="15" height="13"/><polygon points="16,8 20,8 23,11 23,16 16,16"/><circle cx="5.5" cy="18.5" r="2.5"/><circle cx="18.5" cy="18.5" r="2.5"/></svg>
+        Vehículos
+      </button>
+
+      <div class="nav-section">Financiero</div>
+      <button class="nav-item" onclick="showAdminPage('ingresos',this)">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>
+        Ingresos
+      </button>
+      <button class="nav-item" onclick="showAdminPage('codigos',this)">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="4" width="20" height="16" rx="2"/><path d="M8 2v4M16 2v4M2 10h20"/></svg>
+        Códigos
+      </button>
+
+      <div class="nav-section">Sistema</div>
+      <button class="nav-item" onclick="showAdminPage('config',this)">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.07 4.93l-1.41 1.41M4.93 4.93l1.41 1.41M4.93 19.07l1.41-1.41M19.07 19.07l-1.41-1.41M12 2v2M12 20v2M2 12h2M20 12h2"/></svg>
+        Configuración
+      </button>
+      <button class="nav-item" onclick="showAdminPage('clientepanel',this)">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="3" width="20" height="14" rx="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/></svg>
+        Vista Cliente
+        <span class="nav-badge blue" style="background:var(--blue)">NEW</span>
+      </button>
+    </nav>
+    <div class="sidebar-footer">
+      <div class="admin-avatar">AD</div>
+      <div style="flex:1;min-width:0">
+        <div class="admin-name" id="adminNameDisplay">Admin</div>
+        <div class="admin-role"><span class="sync-dot"></span>En línea</div>
+      </div>
+      <button onclick="adminLogout()" style="background:none;border:none;cursor:pointer;color:var(--gray-400);padding:4px" title="Cerrar sesión">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16,17 21,12 16,7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
+      </button>
+    </div>
+  </aside>
+
+  <!-- MAIN CONTENT -->
+  <main class="main">
+
+    <!-- DASHBOARD -->
+    <div id="page-dashboard" class="page active">
+      <div class="topbar">
+        <div><div class="topbar-title">Dashboard</div><div class="topbar-sub" id="lastUpdate">Cargando...</div></div>
+        <div class="topbar-actions">
+          <button class="btn btn-outline btn-sm" onclick="exportarReporte()">
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7,10 12,15 17,10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+            Exportar reporte
+          </button>
+          <button class="btn btn-primary btn-sm" onclick="seedDemoData()">
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 2l-2 2m-7.61 7.61a5.5 5.5 0 1 1-7.778 7.778 5.5 5.5 0 0 1 7.777-7.777zm0 0L15.5 7.5m0 0l3 3L22 7l-3-3m-3.5 3.5L19 4"/></svg>
+            Cargar datos demo
+          </button>
+        </div>
+      </div>
+      <div class="content">
+        <div id="dashAlerts" style="margin-bottom:20px"></div>
+
+        <!-- KPIs -->
+        <div class="stats-grid">
+          <div class="stat-card">
+            <div><div class="stat-label">Total agencias</div><div class="stat-value" id="kpiAgencias">0</div><div class="stat-change neutral" id="kpiAgenciasSub">en la red</div></div>
+            <div class="stat-icon" style="background:#EFF6FF"><svg viewBox="0 0 24 24" fill="none" stroke="#2563EB" stroke-width="2"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/></svg></div>
+          </div>
+          <div class="stat-card">
+            <div><div class="stat-label">Operaciones cerradas</div><div class="stat-value" style="color:var(--green)" id="kpiOperaciones">0</div><div class="stat-change neutral" id="kpiOperacionesSub">este mes</div></div>
+            <div class="stat-icon" style="background:var(--green-light)"><svg viewBox="0 0 24 24" fill="none" stroke="#16A34A" stroke-width="2"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22,4 12,14.01 9,11.01"/></svg></div>
+          </div>
+          <div class="stat-card">
+            <div><div class="stat-label">Ingresos totales</div><div class="stat-value" id="kpiIngresos">$0</div><div class="stat-change neutral" id="kpiIngresosSub">en suscripciones</div></div>
+            <div class="stat-icon" style="background:var(--yellow-light)"><svg viewBox="0 0 24 24" fill="none" stroke="#CA8A04" stroke-width="2"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg></div>
+          </div>
+          <div class="stat-card">
+            <div><div class="stat-label">Matches activos</div><div class="stat-value" style="color:var(--purple)" id="kpiMatches">0</div><div class="stat-change neutral" id="kpiMatchesSub">en seguimiento</div></div>
+            <div class="stat-icon" style="background:var(--purple-light)"><svg viewBox="0 0 24 24" fill="none" stroke="#7C3AED" stroke-width="2"><circle cx="12" cy="5" r="3"/><circle cx="4" cy="19" r="3"/><circle cx="20" cy="19" r="3"/><line x1="12" y1="8" x2="4" y2="16"/><line x1="12" y1="8" x2="20" y2="16"/></svg></div>
+          </div>
+        </div>
+
+        <!-- Charts Row -->
+        <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:16px;margin-bottom:16px">
+          <div class="card">
+            <div class="card-header"><div><div class="card-title">Agencias por ciudad</div></div></div>
+            <div id="cityChart" style="padding:16px 20px;min-height:140px"></div>
+          </div>
+          <div class="card">
+            <div class="card-header"><div><div class="card-title">Top agencias</div><div class="card-sub">Por operaciones</div></div></div>
+            <div id="topAgencias" style="padding:16px 20px;min-height:140px"></div>
+          </div>
+          <div class="card">
+            <div class="card-header"><div><div class="card-title">Ingresos últimos 6 meses</div></div></div>
+            <div id="revenueChart" style="padding:16px 20px;min-height:140px"></div>
+          </div>
+        </div>
+
+        <!-- Activity + Quick Actions -->
+        <div style="display:grid;grid-template-columns:1fr 340px;gap:16px">
+          <div class="card">
+            <div class="card-header"><div><div class="card-title">Actividad reciente</div></div></div>
+            <div id="activityFeed" style="padding:4px 20px"></div>
+          </div>
+          <div class="card">
+            <div class="card-header"><div><div class="card-title">Acciones rápidas</div></div></div>
+            <div style="padding:16px;display:flex;flex-direction:column;gap:8px">
+              <button class="btn btn-outline" style="justify-content:flex-start;width:100%;font-size:12px" onclick="openModal('modalNuevaAgencia')">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/></svg>
+                Agregar agencia manualmente
+              </button>
+              <button class="btn btn-outline" style="justify-content:flex-start;width:100%;font-size:12px" onclick="generarCodigo()">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="4" width="20" height="16" rx="2"/><path d="M8 2v4M16 2v4M2 10h20"/></svg>
+                Generar código de invitación
+              </button>
+              <button class="btn btn-outline" style="justify-content:flex-start;width:100%;font-size:12px" onclick="openModal('modalNuevaOperacion')">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22,4 12,14.01 9,11.01"/></svg>
+                Registrar operación
+              </button>
+              <button class="btn btn-outline" style="justify-content:flex-start;width:100%;font-size:12px" onclick="openModal('modalNuevoMatch')">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="5" r="3"/><circle cx="4" cy="19" r="3"/><circle cx="20" cy="19" r="3"/><line x1="12" y1="8" x2="4" y2="16"/><line x1="12" y1="8" x2="20" y2="16"/></svg>
+                Generar match manual
+              </button>
+              <button class="btn btn-outline" style="justify-content:flex-start;width:100%;font-size:12px" onclick="showAdminPage('solicitudes',null);document.querySelectorAll('.nav-item').forEach(n=>{if(n.textContent.includes('Solicitudes'))n.classList.add('active');else n.classList.remove('active')})">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M16 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="8.5" cy="7" r="4"/><line x1="20" y1="8" x2="20" y2="14"/><line x1="23" y1="11" x2="17" y2="11"/></svg>
+                Ver solicitudes pendientes
+              </button>
+              <button class="btn btn-outline" style="justify-content:flex-start;width:100%;font-size:12px" onclick="exportarReporte()">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7,10 12,15 17,10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+                Exportar reporte completo
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- AGENCIAS -->
+    <div id="page-agencias" class="page">
+      <div class="topbar">
+        <div><div class="topbar-title">Agencias</div><div class="topbar-sub">Todos los miembros activos de la red</div></div>
+        <div class="topbar-actions">
+          <div class="search-bar">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+            <input placeholder="Buscar agencia..." oninput="filtrarAgencias(this.value)" id="agenciaSearch">
+          </div>
+          <select class="form-control" style="width:130px;font-size:12px;padding:7px 10px" onchange="filtrarAgenciasPlan(this.value)" id="agenciaFiltroEstado">
+            <option value="">Todos los planes</option>
+            <option value="premium">Premium</option>
+            <option value="free">Free</option>
+          </select>
+          <button class="btn btn-primary btn-sm" onclick="openModal('modalNuevaAgencia')">
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+            Agregar agencia
+          </button>
+        </div>
+      </div>
+      <div class="content">
+        <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:14px;margin-bottom:20px">
+          <div class="stat-card"><div><div class="stat-label">Total agencias</div><div class="stat-value" id="statTotalAgencias">0</div></div><div class="stat-icon" style="background:#EFF6FF"><svg viewBox="0 0 24 24" fill="none" stroke="#2563EB" stroke-width="2"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/></svg></div></div>
+          <div class="stat-card"><div><div class="stat-label">Plan Premium</div><div class="stat-value" style="color:var(--yellow)" id="statPremium">0</div></div><div class="stat-icon" style="background:var(--yellow-light)"><svg viewBox="0 0 24 24" fill="currentColor" style="color:#CA8A04"><path d="M12 2L15.09 8.26L22 9.27L17 14.14L18.18 21.02L12 17.77L5.82 21.02L7 14.14L2 9.27L8.91 8.26L12 2Z"/></svg></div></div>
+          <div class="stat-card"><div><div class="stat-label">Plan Free</div><div class="stat-value" id="statFree">0</div></div><div class="stat-icon" style="background:var(--gray-100)"><svg viewBox="0 0 24 24" fill="none" stroke="var(--gray-400)" stroke-width="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/></svg></div></div>
+        </div>
+        <div class="card">
+          <div class="card-header"><div><div class="card-title">Listado de agencias</div><div class="card-sub" id="agenciasCountSub">Todas las agencias registradas</div></div></div>
+          <table>
+            <thead><tr><th>Agencia</th><th>Ciudad</th><th>Tipo</th><th>Plan</th><th>Operaciones</th><th>Créditos</th><th>Registro</th><th>Estado</th><th></th></tr></thead>
+            <tbody id="agenciasTable"></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- OPERACIONES -->
+    <div id="page-operaciones" class="page">
+      <div class="topbar">
+        <div><div class="topbar-title">Operaciones</div><div class="topbar-sub">Historial de operaciones concretadas en la red</div></div>
+        <div class="topbar-actions">
+          <div class="search-bar">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+            <input placeholder="Buscar operación..." oninput="filtrarOperaciones(this.value)">
+          </div>
+          <button class="btn btn-outline btn-sm" onclick="exportarCSV('operaciones')">
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7,10 12,15 17,10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+            Exportar CSV
+          </button>
+          <button class="btn btn-primary btn-sm" onclick="openModal('modalNuevaOperacion')">
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+            Registrar operación
+          </button>
+        </div>
+      </div>
+      <div class="content">
+        <div class="stats-grid">
+          <div class="stat-card"><div><div class="stat-label">Total</div><div class="stat-value" id="opTotal">0</div></div><div class="stat-icon" style="background:var(--green-light)"><svg viewBox="0 0 24 24" fill="none" stroke="#16A34A" stroke-width="2"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22,4 12,14.01 9,11.01"/></svg></div></div>
+          <div class="stat-card"><div><div class="stat-label">Concretadas</div><div class="stat-value" style="color:var(--green)" id="opConcretadas">0</div></div><div class="stat-icon" style="background:var(--green-light)"><svg viewBox="0 0 24 24" fill="none" stroke="#16A34A" stroke-width="2"><path d="M9 11l3 3L22 4"/></svg></div></div>
+          <div class="stat-card"><div><div class="stat-label">Canceladas</div><div class="stat-value" style="color:var(--red)" id="opCanceladas">0</div></div><div class="stat-icon" style="background:var(--red-light)"><svg viewBox="0 0 24 24" fill="none" stroke="var(--red)" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="15" y1="9" x2="9" y2="15"/><line x1="9" y1="9" x2="15" y2="15"/></svg></div></div>
+          <div class="stat-card"><div><div class="stat-label">Comisiones generadas</div><div class="stat-value" id="opComisiones">$0</div></div><div class="stat-icon" style="background:var(--yellow-light)"><svg viewBox="0 0 24 24" fill="none" stroke="#CA8A04" stroke-width="2"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg></div></div>
+        </div>
+        <div class="card">
+          <div class="card-header"><div><div class="card-title">Historial de operaciones</div></div></div>
+          <table>
+            <thead><tr><th>Vehículo</th><th>Agencia vendedora</th><th>Agencia compradora</th><th>Comisión</th><th>Estado</th><th>Fecha</th><th></th></tr></thead>
+            <tbody id="operacionesTable"></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- MATCHES -->
+    <div id="page-matches" class="page">
+      <div class="topbar">
+        <div><div class="topbar-title">Matches</div><div class="topbar-sub">Todos los matches generados por el sistema</div></div>
+        <div class="topbar-actions">
+          <button class="btn btn-primary btn-sm" onclick="openModal('modalNuevoMatch')">
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+            Generar match manual
+          </button>
+        </div>
+      </div>
+      <div class="content">
+        <div class="stats-grid">
+          <div class="stat-card"><div><div class="stat-label">Matches totales</div><div class="stat-value" id="matchTotal">0</div></div><div class="stat-icon" style="background:var(--purple-light)"><svg viewBox="0 0 24 24" fill="none" stroke="#7C3AED" stroke-width="2"><circle cx="12" cy="5" r="3"/><circle cx="4" cy="19" r="3"/><circle cx="20" cy="19" r="3"/><line x1="12" y1="8" x2="4" y2="16"/><line x1="12" y1="8" x2="20" y2="16"/></svg></div></div>
+          <div class="stat-card"><div><div class="stat-label">En seguimiento</div><div class="stat-value" style="color:var(--blue)" id="matchActivos">0</div></div><div class="stat-icon" style="background:var(--blue-light)"><svg viewBox="0 0 24 24" fill="none" stroke="#2563EB" stroke-width="2"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg></div></div>
+          <div class="stat-card"><div><div class="stat-label">Concretados</div><div class="stat-value" style="color:var(--green)" id="matchConcretados">0</div></div><div class="stat-icon" style="background:var(--green-light)"><svg viewBox="0 0 24 24" fill="none" stroke="#16A34A" stroke-width="2"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22,4 12,14.01 9,11.01"/></svg></div></div>
+          <div class="stat-card"><div><div class="stat-label">Tasa de cierre</div><div class="stat-value" id="matchTasa">0%</div></div><div class="stat-icon" style="background:var(--yellow-light)"><svg viewBox="0 0 24 24" fill="none" stroke="#CA8A04" stroke-width="2"><path d="M18 20V10M12 20V4M6 20v-6"/></svg></div></div>
+        </div>
+        <div class="card">
+          <div class="card-header"><div><div class="card-title">Listado de matches</div></div></div>
+          <table>
+            <thead><tr><th>Vehículo</th><th>Agencia vendedora</th><th>Agencia compradora</th><th>Generado</th><th>Estado</th><th></th></tr></thead>
+            <tbody id="matchesTable"></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- VEHÍCULOS -->
+    <div id="page-vehiculos" class="page">
+      <div class="topbar">
+        <div><div class="topbar-title">Vehículos</div><div class="topbar-sub">Publicaciones activas en la red</div></div>
+        <div class="topbar-actions">
+          <div class="search-bar">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+            <input placeholder="Buscar vehículo..." oninput="filtrarVehiculos(this.value)">
+          </div>
+          <button class="btn btn-outline btn-sm" onclick="exportarCSV('vehiculos')">
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7,10 12,15 17,10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+            Exportar CSV
+          </button>
+        </div>
+      </div>
+      <div class="content">
+        <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin-bottom:20px">
+          <div class="stat-card"><div><div class="stat-label">Total publicados</div><div class="stat-value" id="vehTotal">0</div></div><div class="stat-icon" style="background:#EFF6FF"><svg viewBox="0 0 24 24" fill="none" stroke="#2563EB" stroke-width="2"><rect x="1" y="3" width="15" height="13"/><polygon points="16,8 20,8 23,11 23,16 16,16"/><circle cx="5.5" cy="18.5" r="2.5"/><circle cx="18.5" cy="18.5" r="2.5"/></svg></div></div>
+          <div class="stat-card"><div><div class="stat-label">Disponibles</div><div class="stat-value" style="color:var(--green)" id="vehDisponibles">0</div></div></div>
+          <div class="stat-card"><div><div class="stat-label">En proceso</div><div class="stat-value" style="color:var(--yellow)" id="vehEnProceso">0</div></div></div>
+          <div class="stat-card"><div><div class="stat-label">Vendidos</div><div class="stat-value" style="color:var(--gray-400)" id="vehVendidos">0</div></div></div>
+        </div>
+        <div class="card">
+          <div class="card-header"><div><div class="card-title">Publicaciones de vehículos</div><div class="card-sub">Todos los vehículos cargados por agencias</div></div></div>
+          <table>
+            <thead><tr><th>Vehículo</th><th>Agencia</th><th>Ciudad</th><th>Precio</th><th>Precio Gremio</th><th>Estado</th><th>Publicado</th><th></th></tr></thead>
+            <tbody id="vehiculosTable"></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- SOLICITUDES -->
+    <div id="page-solicitudes" class="page">
+      <div class="topbar">
+        <div><div class="topbar-title">Solicitudes de acceso</div><div class="topbar-sub">Agencias que quieren unirse a la red</div></div>
+      </div>
+      <div class="content">
+        <div class="card">
+          <div class="card-header"><div><div class="card-title">Solicitudes pendientes</div><div class="card-sub">Revisá y aprobá o rechazá cada agencia</div></div></div>
+          <div id="solicitudesList" style="padding:20px"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- DENUNCIAS -->
+    <div id="page-denuncias" class="page">
+      <div class="topbar">
+        <div><div class="topbar-title">Denuncias</div><div class="topbar-sub">Reportes entre agencias que requieren revisión</div></div>
+      </div>
+      <div class="content">
+        <div class="card">
+          <div class="card-header"><div><div class="card-title">Denuncias recibidas</div><div class="card-sub">Revisá cada denuncia y tomá acción si es necesario</div></div></div>
+          <div id="denunciasList" style="padding:20px"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- CÓDIGOS -->
+    <div id="page-codigos" class="page">
+      <div class="topbar">
+        <div><div class="topbar-title">Códigos de invitación</div><div class="topbar-sub">Gestioná los códigos para que nuevas agencias puedan registrarse</div></div>
+        <div class="topbar-actions">
+          <button class="btn btn-outline btn-sm" onclick="exportarCSV('codigos')">Exportar</button>
+          <button class="btn btn-primary btn-sm" onclick="generarCodigo()">
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+            Generar código
+          </button>
+        </div>
+      </div>
+      <div class="content">
+        <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:14px;margin-bottom:20px">
+          <div class="stat-card"><div><div class="stat-label">Total generados</div><div class="stat-value" id="codTotal">0</div></div><div class="stat-icon" style="background:var(--blue-light)"><svg viewBox="0 0 24 24" fill="none" stroke="#2563EB" stroke-width="2"><rect x="2" y="4" width="20" height="16" rx="2"/><path d="M8 2v4M16 2v4M2 10h20"/></svg></div></div>
+          <div class="stat-card"><div><div class="stat-label">Usados</div><div class="stat-value" style="color:var(--green)" id="codUsados">0</div></div><div class="stat-icon" style="background:var(--green-light)"><svg viewBox="0 0 24 24" fill="none" stroke="#16A34A" stroke-width="2"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22,4 12,14.01 9,11.01"/></svg></div></div>
+          <div class="stat-card"><div><div class="stat-label">Disponibles</div><div class="stat-value" id="codDisponibles">0</div></div><div class="stat-icon" style="background:var(--gray-100)"><svg viewBox="0 0 24 24" fill="none" stroke="var(--gray-400)" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="16"/><line x1="8" y1="12" x2="16" y2="12"/></svg></div></div>
+        </div>
+        <div class="card">
+          <div class="card-header"><div><div class="card-title">Listado de códigos</div></div></div>
+          <table>
+            <thead><tr><th>Código</th><th>Creado</th><th>Vencimiento</th><th>Usado por</th><th>Estado</th><th></th></tr></thead>
+            <tbody id="codigosTable"></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- INGRESOS -->
+    <div id="page-ingresos" class="page">
+      <div class="topbar">
+        <div><div class="topbar-title">Ingresos</div><div class="topbar-sub">Suscripciones Premium y compra de créditos</div></div>
+        <div class="topbar-actions">
+          <button class="btn btn-outline btn-sm" onclick="exportarCSV('pagos')">
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7,10 12,15 17,10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+            Exportar
+          </button>
+          <button class="btn btn-primary btn-sm" onclick="openModal('modalRegistrarPago')">
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+            Registrar pago
+          </button>
+        </div>
+      </div>
+      <div class="content">
+        <div class="stats-grid">
+          <div class="stat-card"><div><div class="stat-label">Ingresos totales</div><div class="stat-value" id="ingTotal">$0</div></div><div class="stat-icon" style="background:var(--green-light)"><svg viewBox="0 0 24 24" fill="none" stroke="#16A34A" stroke-width="2"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg></div></div>
+          <div class="stat-card"><div><div class="stat-label">Suscripciones activas</div><div class="stat-value" id="ingSubs">0</div></div><div class="stat-icon" style="background:var(--yellow-light)"><svg viewBox="0 0 24 24" fill="currentColor" style="color:#CA8A04"><path d="M12 2L15.09 8.26L22 9.27L17 14.14L18.18 21.02L12 17.77L5.82 21.02L7 14.14L2 9.27L8.91 8.26L12 2Z"/></svg></div></div>
+          <div class="stat-card"><div><div class="stat-label">Créditos vendidos</div><div class="stat-value" id="ingCreditos">0</div></div><div class="stat-icon" style="background:var(--red-light)"><svg viewBox="0 0 24 24" fill="none" stroke="var(--red)" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="16"/><line x1="8" y1="12" x2="16" y2="12"/></svg></div></div>
+          <div class="stat-card"><div><div class="stat-label">MRR estimado</div><div class="stat-value" id="ingMRR">$0</div><div class="stat-change neutral">ingreso mensual recurrente</div></div><div class="stat-icon" style="background:var(--purple-light)"><svg viewBox="0 0 24 24" fill="none" stroke="#7C3AED" stroke-width="2"><path d="M18 20V10M12 20V4M6 20v-6"/></svg></div></div>
+        </div>
+        <div class="card">
+          <div class="card-header"><div><div class="card-title">Historial de pagos</div></div></div>
+          <table>
+            <thead><tr><th>Agencia</th><th>Tipo</th><th>Detalle</th><th>Monto</th><th>Estado</th><th>Fecha</th></tr></thead>
+            <tbody id="pagosTable"></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- CONFIG -->
+    <div id="page-config" class="page">
+      <div class="topbar">
+        <div><div class="topbar-title">Configuración</div><div class="topbar-sub">Parámetros generales de la plataforma</div></div>
+        <div class="topbar-actions">
+          <button class="btn btn-primary btn-sm" onclick="guardarConfig()">
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><polyline points="17,21 17,13 7,13 7,21"/><polyline points="7,3 7,8 15,8"/></svg>
+            Guardar cambios
+          </button>
+        </div>
+      </div>
+      <div class="content">
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px">
+          <div class="card">
+            <div class="card-header"><div><div class="card-title">Precios y planes</div></div></div>
+            <div style="padding:20px;display:flex;flex-direction:column;gap:16px">
+              <div class="form-group" style="margin:0"><label class="form-label">Plan Premium ($/mes)</label><div class="input-group"><input class="form-control" id="cfgPremio" type="number" value="150000" style="max-width:180px"><span style="font-size:12px;color:var(--gray-400)">ARS por mes</span></div></div>
+              <div class="form-group" style="margin:0"><label class="form-label">Precio por crédito ($)</label><div class="input-group"><input class="form-control" id="cfgCredito" type="number" value="50000" style="max-width:180px"><span style="font-size:12px;color:var(--gray-400)">ARS por crédito</span></div></div>
+              <div class="form-group" style="margin:0"><label class="form-label">Días demora Free (matches)</label><div class="input-group"><input class="form-control" id="cfgDelay" type="number" value="3" style="max-width:180px"><span style="font-size:12px;color:var(--gray-400)">días</span></div></div>
+              <div class="form-group" style="margin:0"><label class="form-label">Validez publicación Precio Gremio</label><div class="input-group"><input class="form-control" id="cfgGremio" type="number" value="3" style="max-width:180px"><span style="font-size:12px;color:var(--gray-400)">días</span></div></div>
+              <div class="form-group" style="margin:0"><label class="form-label">% Comisión por operación</label><div class="input-group"><input class="form-control" id="cfgComision" type="number" value="2" style="max-width:180px"><span style="font-size:12px;color:var(--gray-400)">% sobre precio vehículo</span></div></div>
+            </div>
+          </div>
+          <div class="card">
+            <div class="card-header"><div><div class="card-title">Funcionalidades</div></div></div>
+            <div style="padding:20px;display:flex;flex-direction:column;gap:0">
+              <div style="display:flex;align-items:center;justify-content:space-between;padding:14px 0;border-bottom:1px solid var(--gray-100)"><div><div style="font-size:13px;font-weight:600">Precio Gremio</div><div style="font-size:11px;color:var(--gray-400);margin-top:2px">Módulo de publicaciones especiales</div></div><label class="toggle"><input type="checkbox" id="togGremio" checked><span class="toggle-slider"></span></label></div>
+              <div style="display:flex;align-items:center;justify-content:space-between;padding:14px 0;border-bottom:1px solid var(--gray-100)"><div><div style="font-size:13px;font-weight:600">Registro abierto</div><div style="font-size:11px;color:var(--gray-400);margin-top:2px">Permitir nuevas solicitudes con código</div></div><label class="toggle"><input type="checkbox" id="togRegistro" checked><span class="toggle-slider"></span></label></div>
+              <div style="display:flex;align-items:center;justify-content:space-between;padding:14px 0;border-bottom:1px solid var(--gray-100)"><div><div style="font-size:13px;font-weight:600">Notificaciones automáticas</div><div style="font-size:11px;color:var(--gray-400);margin-top:2px">Alertas cuando hay nuevos matches</div></div><label class="toggle"><input type="checkbox" id="togNotif" checked><span class="toggle-slider"></span></label></div>
+              <div style="display:flex;align-items:center;justify-content:space-between;padding:14px 0;border-bottom:1px solid var(--gray-100)"><div><div style="font-size:13px;font-weight:600">Modo mantenimiento</div><div style="font-size:11px;color:var(--gray-400);margin-top:2px">Bloquear acceso a agencias temporalmente</div></div><label class="toggle"><input type="checkbox" id="togMant"><span class="toggle-slider"></span></label></div>
+              <div style="display:flex;align-items:center;justify-content:space-between;padding:14px 0"><div><div style="font-size:13px;font-weight:600">Aprobación manual</div><div style="font-size:11px;color:var(--gray-400);margin-top:2px">Revisar solicitudes antes de dar acceso</div></div><label class="toggle"><input type="checkbox" id="togAprobacion" checked><span class="toggle-slider"></span></label></div>
+            </div>
+          </div>
+          <div class="card" style="grid-column:span 2">
+            <div class="card-header"><div><div class="card-title">Información de la plataforma</div></div></div>
+            <div style="padding:20px;display:grid;grid-template-columns:1fr 1fr 1fr;gap:16px">
+              <div class="form-group" style="margin:0"><label class="form-label">Nombre</label><input class="form-control" id="cfgNombrePlat" value="Red de Autos"></div>
+              <div class="form-group" style="margin:0"><label class="form-label">Región</label><input class="form-control" id="cfgRegion" value="Tucumán y el Norte"></div>
+              <div class="form-group" style="margin:0"><label class="form-label">Email de contacto</label><input class="form-control" id="cfgEmail" value="reddeautostuc@gmail.com" type="email"></div>
+              <div class="form-group" style="margin:0"><label class="form-label">WhatsApp soporte</label><input class="form-control" id="cfgWA" value="+54 381 000 0000"></div>
+              <div class="form-group" style="margin:0"><label class="form-label">Versión</label><input class="form-control" value="2.0.0" readonly style="background:var(--gray-50);color:var(--gray-400)"></div>
+              <div class="form-group" style="margin:0"><label class="form-label">Entorno</label><input class="form-control" value="Producción" readonly style="background:var(--gray-50);color:var(--gray-400)"></div>
+            </div>
+          </div>
+          <div class="card" style="grid-column:span 2">
+            <div class="card-header"><div><div class="card-title">Gestión de datos</div><div class="card-sub">Persistencia local · Los datos se guardan en este navegador</div></div>
+            <div style="display:flex;gap:8px">
+              <button class="btn btn-outline btn-sm" onclick="exportarTodosLosDatos()">Exportar backup</button>
+              <button class="btn btn-outline btn-sm" style="color:var(--red);border-color:var(--red)" onclick="limpiarTodosLosDatos()">Limpiar datos</button>
+            </div>
+            </div>
+            <div style="padding:20px">
+              <div style="font-size:12px;color:var(--gray-500);line-height:1.8">
+                <span class="sync-dot"></span>
+                Los datos se sincronizan automáticamente entre el panel admin y el panel cliente mediante <strong>localStorage</strong>. Cualquier cambio en agencias, operaciones o matches es inmediatamente visible en el panel del cliente.
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- VISTA CLIENTE -->
+    <div id="page-clientepanel" class="page">
+      <div class="topbar">
+        <div><div class="topbar-title">Vista Cliente</div><div class="topbar-sub">Simulá cómo ven la plataforma las agencias</div></div>
+        <div class="topbar-actions">
+          <select class="form-control" style="width:200px;font-size:12px;padding:7px 10px" id="clienteAgenciaSelect" onchange="cargarVistaCliente(this.value)">
+            <option value="">Seleccioná una agencia...</option>
+          </select>
+        </div>
+      </div>
+      <div class="content" id="vistaClienteContent">
+        <div class="empty-state">
+          <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="2" y="3" width="20" height="14" rx="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/></svg>
+          <div class="empty-state-title">Seleccioná una agencia para ver su perspectiva</div>
+          <div class="empty-state-sub">Vas a ver exactamente lo que ve esa agencia en su panel cliente.</div>
+        </div>
+      </div>
+    </div>
+
+  </main>
+</div>
+
+<!-- ===================== MODALS ===================== -->
+
+<!-- Modal: Nueva Agencia -->
+<div id="modalNuevaAgencia" class="modal-overlay" onclick="if(event.target===this)closeModal('modalNuevaAgencia')">
+  <div class="modal">
+    <div class="modal-header">
+      <div class="modal-title">Agregar agencia manualmente</div>
+      <button class="modal-close" onclick="closeModal('modalNuevaAgencia')"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>
+    </div>
+    <div class="modal-body">
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:12px">
+        <div class="form-group" style="margin:0"><label class="form-label">Nombre *</label><input class="form-control" id="naNombre" placeholder="AutoCentro Tucumán"></div>
+        <div class="form-group" style="margin:0"><label class="form-label">Ciudad *</label>
+          <select class="form-control" id="naCiudad"><option>Tucumán</option><option>Salta</option><option>Jujuy</option><option>Santiago del Estero</option><option>Catamarca</option><option>La Rioja</option><option>Otra</option></select>
+        </div>
+        <div class="form-group" style="margin:0"><label class="form-label">Tipo</label>
+          <select class="form-control" id="naTipo"><option>Agencia</option><option>Concesionario</option></select>
+        </div>
+        <div class="form-group" style="margin:0"><label class="form-label">Plan</label>
+          <select class="form-control" id="naPlan"><option value="free">Free</option><option value="premium">Premium</option></select>
+        </div>
+        <div class="form-group" style="margin:0"><label class="form-label">Contacto</label><input class="form-control" id="naContacto" placeholder="Juan Pérez"></div>
+        <div class="form-group" style="margin:0"><label class="form-label">Email</label><input class="form-control" id="naEmail" type="email" placeholder="juan@agencia.com"></div>
+        <div class="form-group" style="margin:0"><label class="form-label">Teléfono</label><input class="form-control" id="naTel" placeholder="+54 9 381 ..."></div>
+        <div class="form-group" style="margin:0"><label class="form-label">Créditos iniciales</label><input class="form-control" id="naCreditos" type="number" value="0"></div>
+      </div>
+      <div style="display:flex;gap:10px;margin-top:4px">
+        <button class="btn btn-outline" style="flex:1;justify-content:center" onclick="closeModal('modalNuevaAgencia')">Cancelar</button>
+        <button class="btn btn-primary" style="flex:2;justify-content:center" onclick="agregarAgencia()">
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+          Agregar a la red
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Modal: Ver agencia -->
+<div id="modalVerAgencia" class="modal-overlay" onclick="if(event.target===this)closeModal('modalVerAgencia')">
+  <div class="modal" style="width:580px">
+    <div class="modal-header">
+      <div class="modal-title" id="verAgenciaTitulo">Detalle de agencia</div>
+      <button class="modal-close" onclick="closeModal('modalVerAgencia')"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>
+    </div>
+    <div class="modal-body" id="verAgenciaBody"></div>
+  </div>
+</div>
+
+<!-- Modal: Ver detalle operación -->
+<div id="modalVerOperacion" class="modal-overlay" onclick="if(event.target===this)closeModal('modalVerOperacion')">
+  <div class="modal" style="width:520px">
+    <div class="modal-header">
+      <div class="modal-title" id="verOpTitulo">Detalle de operación</div>
+      <button class="modal-close" onclick="closeModal('modalVerOperacion')"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>
+    </div>
+    <div class="modal-body" id="verOpBody"></div>
+  </div>
+</div>
+
+<!-- Modal: Ver detalle match -->
+<div id="modalVerMatch" class="modal-overlay" onclick="if(event.target===this)closeModal('modalVerMatch')">
+  <div class="modal" style="width:520px">
+    <div class="modal-header">
+      <div class="modal-title" id="verMatchTitulo">Detalle de match</div>
+      <button class="modal-close" onclick="closeModal('modalVerMatch')"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>
+    </div>
+    <div class="modal-body" id="verMatchBody"></div>
+  </div>
+</div>
+
+<!-- Modal: Nueva Operación -->
+<div id="modalNuevaOperacion" class="modal-overlay" onclick="if(event.target===this)closeModal('modalNuevaOperacion')">
+  <div class="modal">
+    <div class="modal-header">
+      <div class="modal-title">Registrar operación</div>
+      <button class="modal-close" onclick="closeModal('modalNuevaOperacion')"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>
+    </div>
+    <div class="modal-body">
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:12px">
+        <div class="form-group" style="grid-column:span 2;margin:0"><label class="form-label">Vehículo *</label><input class="form-control" id="opVehiculo" placeholder="Ej: Toyota Hilux 2022 – GSD 123"></div>
+        <div class="form-group" style="margin:0"><label class="form-label">Agencia vendedora *</label><select class="form-control" id="opVendedora"></select></div>
+        <div class="form-group" style="margin:0"><label class="form-label">Agencia compradora *</label><select class="form-control" id="opCompradora"></select></div>
+        <div class="form-group" style="margin:0"><label class="form-label">Precio de venta ($)</label><input class="form-control" id="opPrecio" type="number" placeholder="5000000"></div>
+        <div class="form-group" style="margin:0"><label class="form-label">Estado</label>
+          <select class="form-control" id="opEstado"><option value="concretada">Concretada</option><option value="cancelada">Cancelada</option></select>
+        </div>
+        <div class="form-group" style="grid-column:span 2;margin:0"><label class="form-label">Notas adicionales</label><input class="form-control" id="opNotas" placeholder="Observaciones opcionales..."></div>
+      </div>
+      <div style="display:flex;gap:10px">
+        <button class="btn btn-outline" style="flex:1;justify-content:center" onclick="closeModal('modalNuevaOperacion')">Cancelar</button>
+        <button class="btn btn-primary" style="flex:2;justify-content:center" onclick="registrarOperacion()">Registrar operación</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Modal: Nuevo Match -->
+<div id="modalNuevoMatch" class="modal-overlay" onclick="if(event.target===this)closeModal('modalNuevoMatch')">
+  <div class="modal">
+    <div class="modal-header">
+      <div class="modal-title">Generar match manual</div>
+      <button class="modal-close" onclick="closeModal('modalNuevoMatch')"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>
+    </div>
+    <div class="modal-body">
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:12px">
+        <div class="form-group" style="grid-column:span 2;margin:0"><label class="form-label">Vehículo *</label><input class="form-control" id="matchVehiculo" placeholder="Ej: Ford Ranger 2021"></div>
+        <div class="form-group" style="margin:0"><label class="form-label">Agencia vendedora *</label><select class="form-control" id="matchVendedora"></select></div>
+        <div class="form-group" style="margin:0"><label class="form-label">Agencia compradora *</label><select class="form-control" id="matchCompradora"></select></div>
+        <div class="form-group" style="grid-column:span 2;margin:0"><label class="form-label">Notas del match</label><input class="form-control" id="matchNotas" placeholder="Motivo o detalle del match..."></div>
+      </div>
+      <div style="display:flex;gap:10px">
+        <button class="btn btn-outline" style="flex:1;justify-content:center" onclick="closeModal('modalNuevoMatch')">Cancelar</button>
+        <button class="btn btn-primary" style="flex:2;justify-content:center" onclick="crearMatch()">Generar match</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Modal: Registrar Pago -->
+<div id="modalRegistrarPago" class="modal-overlay" onclick="if(event.target===this)closeModal('modalRegistrarPago')">
+  <div class="modal">
+    <div class="modal-header">
+      <div class="modal-title">Registrar pago</div>
+      <button class="modal-close" onclick="closeModal('modalRegistrarPago')"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>
+    </div>
+    <div class="modal-body">
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:12px">
+        <div class="form-group" style="grid-column:span 2;margin:0"><label class="form-label">Agencia *</label><select class="form-control" id="pagoAgencia"></select></div>
+        <div class="form-group" style="margin:0"><label class="form-label">Tipo *</label>
+          <select class="form-control" id="pagoTipo" onchange="actualizarMontoPago(this.value)">
+            <option value="premium">Suscripción Premium</option>
+            <option value="creditos">Compra de créditos</option>
+          </select>
+        </div>
+        <div class="form-group" style="margin:0"><label class="form-label">Monto ($) *</label><input class="form-control" id="pagoMonto" type="number" value="150000"></div>
+        <div class="form-group" id="cantCreditosGroup" style="margin:0;display:none"><label class="form-label">Cantidad de créditos</label><input class="form-control" id="pagoCantCreditos" type="number" value="1"></div>
+      </div>
+      <div style="display:flex;gap:10px">
+        <button class="btn btn-outline" style="flex:1;justify-content:center" onclick="closeModal('modalRegistrarPago')">Cancelar</button>
+        <button class="btn btn-primary" style="flex:2;justify-content:center" onclick="registrarPago()">Registrar pago</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Modal: Agregar créditos -->
+<div id="modalAgregarCreditos" class="modal-overlay" onclick="if(event.target===this)closeModal('modalAgregarCreditos')">
+  <div class="modal" style="width:360px">
+    <div class="modal-header">
+      <div class="modal-title">Agregar créditos</div>
+      <button class="modal-close" onclick="closeModal('modalAgregarCreditos')"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>
+    </div>
+    <div class="modal-body">
+      <p id="creditosAgenciaNombre" style="font-size:13px;font-weight:600;margin-bottom:14px"></p>
+      <div class="form-group">
+        <label class="form-label">Cantidad de créditos *</label>
+        <input class="form-control" id="creditosAmount" type="number" value="5" min="1">
+      </div>
+      <div style="display:flex;gap:10px;margin-top:4px">
+        <button class="btn btn-outline" style="flex:1;justify-content:center" onclick="closeModal('modalAgregarCreditos')">Cancelar</button>
+        <button class="btn btn-primary" style="flex:2;justify-content:center" onclick="confirmarAgregarCreditos()">Agregar créditos</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Modal: Confirmar -->
+<div id="modalConfirmar" class="modal-overlay" onclick="if(event.target===this)closeModal('modalConfirmar')">
+  <div class="modal" style="width:400px">
+    <div class="modal-header">
+      <div class="modal-title" id="confirmTitle">¿Confirmar acción?</div>
+      <button class="modal-close" onclick="closeModal('modalConfirmar')"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>
+    </div>
+    <div class="modal-body">
+      <p id="confirmMsg" style="font-size:13px;color:var(--gray-600);line-height:1.6;margin-bottom:20px"></p>
+      <div style="display:flex;gap:10px">
+        <button class="btn btn-outline" style="flex:1;justify-content:center" onclick="closeModal('modalConfirmar')">Cancelar</button>
+        <button id="confirmBtn" class="btn btn-primary" style="flex:1;justify-content:center">Confirmar</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Modal: Ver vehículo -->
+<div id="modalVerVehiculo" class="modal-overlay" onclick="if(event.target===this)closeModal('modalVerVehiculo')">
+  <div class="modal" style="width:520px">
+    <div class="modal-header">
+      <div class="modal-title" id="verVehTitulo">Detalle del vehículo</div>
+      <button class="modal-close" onclick="closeModal('modalVerVehiculo')"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>
+    </div>
+    <div class="modal-body" id="verVehBody"></div>
+  </div>
+</div>
+
+<script data-cfasync="false" src="/cdn-cgi/scripts/5c5dd728/cloudflare-static/email-decode.min.js"></script><script>
+// ── STATE & STORAGE ──
+const STORE_KEY = 'redautos_admin_v2';
+let agencias=[], operaciones=[], matchesData=[], solicitudes=[], denuncias=[], codigos=[], pagos=[], vehiculos=[], config={};
+let _confirmCallback=null, _creditosTargetId=null;
+
+function saveData() {
+  const data = { agencias, operaciones, matchesData, solicitudes, denuncias, codigos, pagos, vehiculos, config };
+  localStorage.setItem(STORE_KEY, JSON.stringify(data));
+  localStorage.setItem('redautos_client_sync', JSON.stringify({ agencias, operaciones, matchesData, vehiculos, config, updated: Date.now() }));
+  // Save to Firebase (async, non-blocking)
+  if (window.fbSaveAll) window.fbSaveAll(data);
+}
+
+function loadData() {
+  const raw = localStorage.getItem(STORE_KEY);
+  if (raw) {
+    try {
+      const d = JSON.parse(raw);
+      agencias    = d.agencias    || [];
+      operaciones = d.operaciones || [];
+      matchesData = d.matchesData || [];
+      solicitudes = d.solicitudes || [];
+      denuncias   = d.denuncias   || [];
+      codigos     = d.codigos     || [];
+      pagos       = d.pagos       || [];
+      vehiculos   = d.vehiculos   || [];
+      config      = d.config      || getDefaultConfig();
+    } catch(e) { resetToDefaults(); }
+  } else { resetToDefaults(); }
+  // Also load from Firebase (overwrites localStorage with server data)
+  if (window.fbLoadAll) {
+    window.fbLoadAll().then(d => {
+      if (!d) return;
+      agencias    = d.agencias    || agencias;
+      operaciones = d.operaciones || operaciones;
+      matchesData = d.matchesData || matchesData;
+      solicitudes = d.solicitudes || solicitudes;
+      denuncias   = d.denuncias   || denuncias;
+      codigos     = d.codigos     || codigos;
+      pagos       = d.pagos       || pagos;
+      vehiculos   = d.vehiculos   || vehiculos;
+      config      = d.config      || config;
+      localStorage.setItem(STORE_KEY, JSON.stringify(d));
+      refreshData();
+      showToast('Datos sincronizados con Firebase ☁️', 'green');
+    }).catch(e => console.warn('Firebase load error:', e));
+  }
+}
+
+function getDefaultConfig() {
+  return { premio:150000, credito:50000, delay:3, gremio:3, comision:2, gremioOn:true, registro:true, notif:true, mant:false, aprobacion:true, nombre:'Red de Autos', region:'Tucumán y el Norte', email:'reddeautostuc@gmail.com', wa:'+54 381 000 0000' };
+}
+
+function resetToDefaults() {
+  agencias=[]; operaciones=[]; matchesData=[]; solicitudes=[]; denuncias=[]; codigos=[]; pagos=[]; vehiculos=[];
+  config = getDefaultConfig();
+}
+
+// ── LOGIN ──
+function toggleAdminPwd() {
+  const input=document.getElementById('adminPass'), eye=document.getElementById('eyeAdmin');
+  if(input.type==='password'){input.type='text';eye.innerHTML='<path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94"/><path d="M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19"/><line x1="1" y1="1" x2="23" y2="23"/>';}
+  else{input.type='password';eye.innerHTML='<path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/>';}
+}
+
+function adminLogin() {
+  const email=document.getElementById('adminEmail').value.trim();
+  const pass=document.getElementById('adminPass').value;
+  const err=document.getElementById('loginError');
+  err.classList.remove('visible');
+  if(!email||!pass){err.textContent='Ingresá email y contraseña.';err.classList.add('visible');return;}
+  // Valid credentials check
+  const validEmails = ['reddeautostuc@gmail.com','admin'];
+  const validPasses = ['admin123','admin'];
+  // Try Firebase Auth first, fallback to demo credentials
+  const loginAndEnter = () => {
+    document.getElementById('adminNameDisplay').textContent = email.split('@')[0];
+    const screen=document.getElementById('adminLogin');
+    screen.style.transition='opacity 0.3s';screen.style.opacity='0';
+    setTimeout(()=>{screen.style.display='none';document.getElementById('adminApp').style.display='flex';refreshData();},300);
+  };
+  if (window.adminLoginFirebase) {
+    const btn = document.querySelector('#adminLogin .btn-primary');
+    if(btn){btn.textContent='Ingresando...';btn.disabled=true;}
+    window.adminLoginFirebase(email, pass).then(res => {
+      if(btn){btn.textContent='Ingresar al panel';btn.disabled=false;}
+      if (res.ok) { loginAndEnter(); }
+      else {
+        // Fallback to demo credentials
+        const validEmails2 = ['reddeautostuc@gmail.com','admin'];
+        const validPasses2 = ['admin123','admin'];
+        if(validEmails2.some(e=>e===email)&&validPasses2.some(p=>p===pass)){loginAndEnter();}
+        else{err.textContent=res.msg||'Email o contraseña incorrectos.';err.classList.add('visible');}
+      }
+    });
+    return;
+  }
+  if(!['reddeautostuc@gmail.com','admin'].some(e=>e===email)||!['admin123','admin'].some(p=>p===pass)){
+    err.textContent='Email o contraseña incorrectos.';err.classList.add('visible');return;
+  }
+  loginAndEnter();
+}
+
+function adminLogout() {
+  confirmar('Cerrar sesión','¿Querés cerrar la sesión del panel admin?','Cerrar sesión','var(--red)',()=>{
+    document.getElementById('adminApp').style.display='none';
+    const s=document.getElementById('adminLogin');s.style.display='flex';s.style.opacity='1';
+    document.getElementById('adminEmail').value='';document.getElementById('adminPass').value='';
+    document.getElementById('loginError').classList.remove('visible');
+  });
+}
+
+document.getElementById('adminEmail').addEventListener('keydown',e=>{if(e.key==='Enter')document.getElementById('adminPass').focus();});
+document.getElementById('adminPass').addEventListener('keydown',e=>{if(e.key==='Enter')adminLogin();});
+
+// ── NAVIGATION ──
+function showAdminPage(name, el) {
+  document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
+  document.querySelectorAll('.nav-item').forEach(n=>n.classList.remove('active'));
+  document.getElementById('page-'+name).classList.add('active');
+  if(el) el.classList.add('active');
+  if(name==='clientepanel') populateClienteAgenciaSelect();
+  if(name==='operaciones'||name==='matches') populateAgenciasSelects();
+}
+
+// ── MODAL ──
+function openModal(id) { document.getElementById(id).classList.add('active'); }
+function closeModal(id) { document.getElementById(id).classList.remove('active'); }
+
+function confirmar(title,msg,btnLabel,btnColor,callback) {
+  document.getElementById('confirmTitle').textContent=title;
+  document.getElementById('confirmMsg').textContent=msg;
+  const btn=document.getElementById('confirmBtn');
+  btn.textContent=btnLabel; btn.style.background=btnColor||'var(--red)';
+  _confirmCallback=callback;
+  btn.onclick=()=>{closeModal('modalConfirmar');if(_confirmCallback)_confirmCallback();};
+  openModal('modalConfirmar');
+}
+
+// ── POPULATE SELECTS ──
+function populateAgenciasSelects() {
+  ['opVendedora','opCompradora','matchVendedora','matchCompradora','pagoAgencia'].forEach(id=>{
+    const sel=document.getElementById(id);
+    if(!sel) return;
+    const cur=sel.value;
+    sel.innerHTML='<option value="">Seleccioná...</option>'+agencias.map(a=>`<option value="${a.nombre}">${a.nombre} (${a.ciudad})</option>`).join('');
+    if(cur) sel.value=cur;
+  });
+}
+
+function populateClienteAgenciaSelect() {
+  const sel=document.getElementById('clienteAgenciaSelect');
+  sel.innerHTML='<option value="">Seleccioná una agencia...</option>'+agencias.map(a=>`<option value="${a.id}">${a.nombre}</option>`).join('');
+}
+
+// ── DATA REFRESH ──
+function refreshData() {
+  saveData();
+  document.getElementById('lastUpdate').textContent='Actualizado: '+new Date().toLocaleTimeString('es-AR',{hour:'2-digit',minute:'2-digit'});
+  const loginStatAg=document.getElementById('loginStatAg'), loginStatOp=document.getElementById('loginStatOp'), loginStatIng=document.getElementById('loginStatIng');
+  if(loginStatAg) loginStatAg.textContent=agencias.length;
+  if(loginStatOp) loginStatOp.textContent=operaciones.filter(o=>o.estado==='concretada').length;
+  if(loginStatIng) loginStatIng.textContent='$'+pagos.reduce((s,p)=>s+(p.monto||0),0).toLocaleString('es-AR');
+  renderDashboard(); renderAgencias(); renderOperaciones(); renderMatches();
+  renderSolicitudes(); renderDenuncias(); renderCodigos(); renderPagos(); renderVehiculos();
+  updateNavBadges(); loadConfigToForm();
+}
+
+// ── DEMO DATA ──
+function seedDemoData() {
+  confirmar('Cargar datos demo','Esto va a reemplazar todos los datos actuales con datos de ejemplo para pruebas. ¿Continuás?','Cargar demo','var(--blue)',()=>{
+    resetToDefaults();
+    const ahora = new Date();
+    const fecha = (d=0) => { const f=new Date(ahora); f.setDate(f.getDate()-d); return f.toLocaleDateString('es-AR'); };
+
+    agencias=[
+      {id:1,nombre:'AutoCentro Tucumán',ciudad:'Tucumán',tipo:'Agencia',plan:'premium',contacto:'Sergio Ramos',email:'sergio@autocentro.com',tel:'+54 381 401 0001',creditos:12,operaciones:18,matches:7,fechaRegistro:fecha(120),estado:'activo',initials:'AC'},
+      {id:2,nombre:'GerAutos Norte',ciudad:'Salta',tipo:'Agencia',plan:'premium',contacto:'Laura Méndez',email:'laura@gerautos.com',tel:'+54 387 401 0002',creditos:8,operaciones:14,matches:5,fechaRegistro:fecha(90),estado:'activo',initials:'GA'},
+      {id:3,nombre:'Delta Motors',ciudad:'Tucumán',tipo:'Concesionario',plan:'free',contacto:'Marcos Delgado',email:'marcos@deltamotors.com',tel:'+54 381 402 0003',creditos:3,operaciones:6,matches:3,fechaRegistro:fecha(60),estado:'activo',initials:'DM'},
+      {id:4,nombre:'Noroeste Autos',ciudad:'Jujuy',tipo:'Agencia',plan:'free',contacto:'Patricia Gil',email:'patricia@noroeste.com',tel:'+54 388 401 0004',creditos:1,operaciones:3,matches:2,fechaRegistro:fecha(45),estado:'activo',initials:'NA'},
+      {id:5,nombre:'Sur Motors',ciudad:'Santiago del Estero',tipo:'Agencia',plan:'premium',contacto:'Diego Orozco',email:'diego@surmotors.com',tel:'+54 385 401 0005',creditos:15,operaciones:11,matches:6,fechaRegistro:fecha(80),estado:'activo',initials:'SM'},
+      {id:6,nombre:'Catamarca Cars',ciudad:'Catamarca',tipo:'Agencia',plan:'free',contacto:'Viviana Rojas',email:'viviana@catamarca.com',tel:'+54 383 401 0006',creditos:0,operaciones:2,matches:1,fechaRegistro:fecha(30),estado:'activo',initials:'CC'},
+      {id:7,nombre:'Premium Vehículos',ciudad:'Tucumán',tipo:'Concesionario',plan:'premium',contacto:'Fernando Paz',email:'fernando@premiumveh.com',tel:'+54 381 403 0007',creditos:20,operaciones:22,matches:9,fechaRegistro:fecha(150),estado:'activo',initials:'PV'},
+      {id:8,nombre:'Auto Express Salta',ciudad:'Salta',tipo:'Agencia',plan:'free',contacto:'Romina Torres',email:'romina@autoexpress.com',tel:'+54 387 402 0008',creditos:2,operaciones:4,matches:2,fechaRegistro:fecha(20),estado:'suspendido',initials:'AE'},
+    ];
+
+    operaciones=[
+      {id:101,vehiculo:'Toyota Hilux 2022 – GSD 123',agenciaVendedora:'AutoCentro Tucumán',agenciaCompradora:'GerAutos Norte',precio:8500000,comisionMonto:170000,estado:'concretada',fecha:fecha(5),detalle:'Camioneta doble cabina 4x4'},
+      {id:102,vehiculo:'Ford Ranger 2021 – LMN 456',agenciaVendedora:'Premium Vehículos',agenciaCompradora:'Delta Motors',precio:7200000,comisionMonto:144000,estado:'concretada',fecha:fecha(10),detalle:'XLT automática'},
+      {id:103,vehiculo:'VW Amarok 2023 – OPQ 789',agenciaVendedora:'Sur Motors',agenciaCompradora:'AutoCentro Tucumán',precio:9800000,comisionMonto:196000,estado:'concretada',fecha:fecha(15),detalle:'V6 Highline'},
+      {id:104,vehiculo:'Renault Duster 2022 – RST 012',agenciaVendedora:'Noroeste Autos',agenciaCompradora:'Sur Motors',precio:4500000,comisionMonto:90000,estado:'concretada',fecha:fecha(18),detalle:'Oroch 4x2'},
+      {id:105,vehiculo:'Chevrolet S10 2021 – UVW 345',agenciaVendedora:'GerAutos Norte',agenciaCompradora:'Catamarca Cars',precio:6800000,comisionMonto:136000,estado:'cancelada',fecha:fecha(22),detalle:'HC 4x4 manual – cancelado por precio'},
+      {id:106,vehiculo:'Peugeot 3008 2022 – XYZ 678',agenciaVendedora:'AutoCentro Tucumán',agenciaCompradora:'Premium Vehículos',precio:5200000,comisionMonto:104000,estado:'concretada',fecha:fecha(3),detalle:'Allure Plus automático'},
+    ];
+
+    matchesData=[
+      {id:201,vehiculo:'Mitsubishi L200 2023 – ABC 111',agenciaVendedora:'Premium Vehículos',agenciaCompradora:'GerAutos Norte',estado:'pendiente',fecha:fecha(1),notas:'Match por demanda de camioneta con menos de 20.000 km'},
+      {id:202,vehiculo:'Toyota SW4 2022 – DEF 222',agenciaVendedora:'Sur Motors',agenciaCompradora:'AutoCentro Tucumán',estado:'pendiente',fecha:fecha(2),notas:'7 asientos, buscado por AutoCentro'},
+      {id:203,vehiculo:'Ford F-150 2021 – GHI 333',agenciaVendedora:'AutoCentro Tucumán',agenciaCompradora:'Noroeste Autos',estado:'concretada',fecha:fecha(12),notas:'Operación cerrada exitosamente'},
+      {id:204,vehiculo:'BMW X3 2022 – JKL 444',agenciaVendedora:'Delta Motors',agenciaCompradora:'Premium Vehículos',estado:'cancelada',fecha:fecha(20),notas:'No hubo acuerdo en precio'},
+      {id:205,vehiculo:'Mercedes GLE 2023 – MNO 555',agenciaVendedora:'GerAutos Norte',agenciaCompradora:'Sur Motors',estado:'pendiente',fecha:fecha(0),notas:'Match automático por criterios de búsqueda'},
+    ];
+
+    solicitudes=[
+      {id:301,nombre:'Rioja Motors',ciudad:'La Rioja',contacto:'Hernán Castillo',email:'hernan@riojamotors.com',codigo:'DEMO2024',fecha:fecha(2),estado:'pendiente',initials:'RM'},
+      {id:302,nombre:'Belén Autos',ciudad:'Catamarca',contacto:'María Belén Suárez',email:'belen@belenautos.com',codigo:'NORD2024',fecha:fecha(5),estado:'aprobada',initials:'BA'},
+      {id:303,nombre:'Trans Norte SA',ciudad:'Jujuy',contacto:'Rodrigo Mamani',email:'rodrigo@transnorte.com',codigo:'FREE001',fecha:fecha(8),estado:'rechazada',initials:'TN'},
+    ];
+
+    denuncias=[
+      {id:401,contra:'Auto Express Salta',porAgencia:'AutoCentro Tucumán',motivo:'Incumplimiento',detalle:'No entregó el vehículo acordado en el match',fecha:fecha(3),estado:'pendiente'},
+      {id:402,contra:'Delta Motors',porAgencia:'GerAutos Norte',motivo:'Precio incorrecto',detalle:'Publicó precio gremio por encima del acordado',fecha:fecha(15),estado:'desestimada'},
+    ];
+
+    codigos=[
+      {id:501,codigo:'TUCU2024',creado:fecha(60),vence:fecha(-30),usadoPor:null,estado:'disponible'},
+      {id:502,codigo:'NORD2024',creado:fecha(45),vence:fecha(-15),usadoPor:'Belén Autos',estado:'usado'},
+      {id:503,codigo:'DEMO2024',creado:fecha(30),vence:fecha(-0),usadoPor:null,estado:'disponible'},
+      {id:504,codigo:'FREE001',creado:fecha(20),vence:fecha(-10),usadoPor:'Trans Norte SA',estado:'usado'},
+      {id:505,codigo:'SALT2024',creado:fecha(10),vence:fecha(-20),usadoPor:null,estado:'revocado'},
+    ];
+
+    pagos=[
+      {id:601,agencia:'AutoCentro Tucumán',tipo:'premium',detalle:'Suscripción mensual Premium',monto:150000,cantidad:0,fecha:fecha(30)},
+      {id:602,agencia:'GerAutos Norte',tipo:'premium',detalle:'Suscripción mensual Premium',monto:150000,cantidad:0,fecha:fecha(30)},
+      {id:603,agencia:'Sur Motors',tipo:'premium',detalle:'Suscripción mensual Premium',monto:150000,cantidad:0,fecha:fecha(28)},
+      {id:604,agencia:'Premium Vehículos',tipo:'premium',detalle:'Suscripción mensual Premium',monto:150000,cantidad:0,fecha:fecha(25)},
+      {id:605,agencia:'Delta Motors',tipo:'creditos',detalle:'Compra de 5 créditos',monto:250000,cantidad:5,fecha:fecha(20)},
+      {id:606,agencia:'Noroeste Autos',tipo:'creditos',detalle:'Compra de 3 créditos',monto:150000,cantidad:3,fecha:fecha(15)},
+      {id:607,agencia:'AutoCentro Tucumán',tipo:'creditos',detalle:'Compra de 10 créditos',monto:500000,cantidad:10,fecha:fecha(10)},
+      {id:608,agencia:'AutoCentro Tucumán',tipo:'premium',detalle:'Suscripción mensual Premium',monto:150000,cantidad:0,fecha:fecha(1)},
+    ];
+
+    vehiculos=[
+      {id:701,vehiculo:'Toyota Hilux 2022',patente:'GSD 123',marca:'Toyota',modelo:'Hilux',anio:2022,km:28000,precio:8500000,precioGremio:8100000,estado:'disponible',agencia:'AutoCentro Tucumán',ciudad:'Tucumán',publicado:fecha(5),descripcion:'4x4 doble cabina manual'},
+      {id:702,vehiculo:'Ford Ranger 2021',patente:'LMN 456',marca:'Ford',modelo:'Ranger',anio:2021,km:42000,precio:7200000,precioGremio:6900000,estado:'disponible',agencia:'Premium Vehículos',ciudad:'Tucumán',publicado:fecha(8),descripcion:'XLT automática, full equipo'},
+      {id:703,vehiculo:'VW Amarok 2023',patente:'OPQ 789',marca:'Volkswagen',modelo:'Amarok',anio:2023,km:15000,precio:9800000,precioGremio:9400000,estado:'en_proceso',agencia:'Sur Motors',ciudad:'Santiago del Estero',publicado:fecha(3),descripcion:'V6 Highline Plus'},
+      {id:704,vehiculo:'Renault Duster 2022',patente:'RST 012',marca:'Renault',modelo:'Duster',anio:2022,km:31000,precio:4500000,precioGremio:4300000,estado:'disponible',agencia:'Noroeste Autos',ciudad:'Jujuy',publicado:fecha(12),descripcion:'Oroch 4x2 manual'},
+      {id:705,vehiculo:'Peugeot 3008 2022',patente:'XYZ 678',marca:'Peugeot',modelo:'3008',anio:2022,km:22000,precio:5200000,precioGremio:4950000,estado:'vendido',agencia:'AutoCentro Tucumán',ciudad:'Tucumán',publicado:fecha(20),descripcion:'Allure Plus automático'},
+      {id:706,vehiculo:'Mitsubishi L200 2023',patente:'ABC 111',marca:'Mitsubishi',modelo:'L200',anio:2023,km:9000,precio:8200000,precioGremio:7900000,estado:'disponible',agencia:'Premium Vehículos',ciudad:'Tucumán',publicado:fecha(1),descripcion:'Triton 4x4 AT'},
+    ];
+
+    refreshData();
+    showToast('Datos demo cargados correctamente', 'green');
+  });
+}
+
+// ── AGENCIAS ──
+function agregarAgencia() {
+  const nombre=document.getElementById('naNombre').value.trim();
+  if(!nombre){showToast('El nombre es obligatorio','red');return;}
+  const ciudad=document.getElementById('naCiudad').value;
+  const tipo=document.getElementById('naTipo').value;
+  const plan=document.getElementById('naPlan').value;
+  const contacto=document.getElementById('naContacto').value.trim();
+  const email=document.getElementById('naEmail').value.trim();
+  const tel=document.getElementById('naTel').value.trim();
+  const creditos=parseInt(document.getElementById('naCreditos').value)||0;
+  const initials=nombre.split(' ').filter(w=>/[A-Za-z]/.test(w)).map(w=>w[0].toUpperCase()).slice(0,2).join('');
+  agencias.push({id:Date.now(),nombre,ciudad,tipo,plan,contacto,email,tel,creditos,operaciones:0,matches:0,fechaRegistro:new Date().toLocaleDateString('es-AR'),estado:'activo',initials});
+  closeModal('modalNuevaAgencia');
+  ['naNombre','naContacto','naEmail','naTel'].forEach(id=>document.getElementById(id).value='');
+  document.getElementById('naCreditos').value='0';
+  refreshData();
+  showToast('Agencia "'+nombre+'" agregada correctamente','green');
+}
+
+function verAgencia(id) {
+  const a=agencias.find(x=>x.id===id); if(!a) return;
+  document.getElementById('verAgenciaTitulo').textContent=a.nombre;
+  const agOps=operaciones.filter(o=>o.agenciaVendedora===a.nombre||o.agenciaCompradora===a.nombre);
+  const agMatches=matchesData.filter(m=>m.agenciaVendedora===a.nombre||m.agenciaCompradora===a.nombre);
+  document.getElementById('verAgenciaBody').innerHTML=`
+    <div style="display:flex;align-items:center;gap:14px;margin-bottom:20px;padding:14px;background:var(--gray-50);border-radius:var(--radius-sm)">
+      <div style="width:52px;height:52px;border-radius:12px;background:var(--red-light);display:flex;align-items:center;justify-content:center;font-weight:700;font-size:18px;color:var(--red)">${a.initials}</div>
+      <div><div style="font-size:17px;font-weight:700">${a.nombre}</div><div style="font-size:12px;color:var(--gray-500)">${a.ciudad} · ${a.tipo}</div></div>
+      <div style="margin-left:auto">${a.plan==='premium'?'<span class="badge badge-yellow">⭐ Premium</span>':'<span class="badge badge-gray">Free</span>'}</div>
+    </div>
+    <div class="detail-row">
+      <div><div class="detail-field-lbl">Estado</div>${a.estado==='activo'?'<span class="badge badge-green"><span class="status-dot dot-green"></span>Activo</span>':'<span class="badge badge-red"><span class="status-dot dot-red"></span>Suspendido</span>'}</div>
+      <div><div class="detail-field-lbl">Contacto</div><div class="detail-field-val">${a.contacto||'—'}</div></div>
+      <div><div class="detail-field-lbl">Email</div><div class="detail-field-val">${a.email||'—'}</div></div>
+      <div><div class="detail-field-lbl">Teléfono</div><div class="detail-field-val">${a.tel||'—'}</div></div>
+      <div><div class="detail-field-lbl">Fecha de registro</div><div class="detail-field-val">${a.fechaRegistro}</div></div>
+    </div>
+    <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;margin-bottom:20px">
+      <div style="background:var(--gray-50);border-radius:var(--radius-sm);padding:12px;text-align:center"><div style="font-size:11px;color:var(--gray-400)">Operaciones</div><div style="font-size:22px;font-weight:700">${agOps.length}</div></div>
+      <div style="background:var(--gray-50);border-radius:var(--radius-sm);padding:12px;text-align:center"><div style="font-size:11px;color:var(--gray-400)">Matches</div><div style="font-size:22px;font-weight:700">${agMatches.length}</div></div>
+      <div style="background:var(--blue-light);border-radius:var(--radius-sm);padding:12px;text-align:center"><div style="font-size:11px;color:var(--blue)">Créditos</div><div style="font-size:22px;font-weight:700;color:var(--blue)">${a.creditos}</div></div>
+    </div>
+    <div style="display:flex;gap:8px;flex-wrap:wrap">
+      ${a.estado==='activo'
+        ?`<button class="btn btn-outline btn-sm" style="color:var(--yellow);border-color:var(--yellow)" onclick="toggleEstadoAgencia(${a.id},'suspendido')">Suspender</button>`
+        :`<button class="btn btn-green btn-sm" onclick="toggleEstadoAgencia(${a.id},'activo')">Reactivar</button>`}
+      ${a.plan==='free'
+        ?`<button class="btn btn-primary btn-sm" onclick="cambiarPlan(${a.id},'premium')">⭐ Subir a Premium</button>`
+        :`<button class="btn btn-outline btn-sm" onclick="cambiarPlan(${a.id},'free')">Bajar a Free</button>`}
+      <button class="btn btn-outline btn-sm" style="color:var(--blue);border-color:var(--blue)" onclick="closeModal('modalVerAgencia');abrirAgregarCreditos(${a.id})">+ Créditos</button>
+      <button class="btn btn-outline btn-sm" style="color:var(--red);border-color:var(--red)" onclick="eliminarAgencia(${a.id})">
+        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3,6 5,6 21,6"/><path d="M19,6l-1,14a2,2,0,0,1-2,2H8a2,2,0,0,1-2-2L5,6"/></svg>
+        Eliminar
+      </button>
+    </div>`;
+  openModal('modalVerAgencia');
+}
+
+function toggleEstadoAgencia(id, nuevoEstado) {
+  const a=agencias.find(x=>x.id===id); if(!a) return;
+  confirmar(nuevoEstado==='suspendido'?'Suspender agencia':'Reactivar agencia',
+    nuevoEstado==='suspendido'?`¿Suspender el acceso de "${a.nombre}"?`:`¿Reactivar el acceso de "${a.nombre}"?`,
+    nuevoEstado==='suspendido'?'Suspender':'Reactivar',
+    nuevoEstado==='suspendido'?'var(--yellow)':'var(--green)',
+    ()=>{ a.estado=nuevoEstado; closeModal('modalVerAgencia'); refreshData(); showToast(`Agencia ${nuevoEstado==='suspendido'?'suspendida':'reactivada'}`,nuevoEstado==='suspendido'?'yellow':'green'); });
+}
+
+function cambiarPlan(id, plan) {
+  const a=agencias.find(x=>x.id===id); if(!a) return;
+  a.plan=plan; closeModal('modalVerAgencia'); refreshData();
+  showToast(`Plan actualizado a ${plan==='premium'?'Premium':'Free'}`,plan==='premium'?'yellow':'gray');
+}
+
+function abrirAgregarCreditos(id) {
+  const a=agencias.find(x=>x.id===id); if(!a) return;
+  _creditosTargetId=id;
+  document.getElementById('creditosAgenciaNombre').textContent='Agencia: '+a.nombre+' ('+a.creditos+' créditos actuales)';
+  document.getElementById('creditosAmount').value='5';
+  openModal('modalAgregarCreditos');
+}
+
+function confirmarAgregarCreditos() {
+  const n=parseInt(document.getElementById('creditosAmount').value)||0;
+  if(n<=0){showToast('Ingresá una cantidad válida','red');return;}
+  const a=agencias.find(x=>x.id===_creditosTargetId); if(!a) return;
+  a.creditos+=n;
+  closeModal('modalAgregarCreditos');
+  refreshData();
+  showToast(`+${n} créditos agregados a ${a.nombre}`,'green');
+}
+
+// keep legacy prompt-based for inline buttons
+function agregarCreditos(id) { abrirAgregarCreditos(id); }
+
+function eliminarAgencia(id) {
+  const a=agencias.find(x=>x.id===id); if(!a) return;
+  confirmar('Eliminar agencia',`¿Estás seguro de eliminar "${a.nombre}"? Esta acción no se puede deshacer.`,'Eliminar definitivamente','var(--red)',()=>{
+    agencias=agencias.filter(x=>x.id!==id);
+    closeModal('modalVerAgencia'); refreshData(); showToast('Agencia eliminada','red');
+  });
+}
+
+function filtrarAgencias(q) {
+  document.querySelectorAll('#agenciasTable tr[data-id]').forEach(r=>{
+    r.style.display=r.textContent.toLowerCase().includes(q.toLowerCase())?'':'none';
+  });
+}
+
+function filtrarAgenciasPlan(plan) {
+  document.querySelectorAll('#agenciasTable tr[data-id]').forEach(r=>{
+    r.style.display=(!plan||r.dataset.plan===plan)?'':'none';
+  });
+}
+
+// ── OPERACIONES ──
+function registrarOperacion() {
+  const vehiculo=document.getElementById('opVehiculo').value.trim();
+  const vendedora=document.getElementById('opVendedora').value;
+  const compradora=document.getElementById('opCompradora').value;
+  const precio=parseFloat(document.getElementById('opPrecio').value)||0;
+  const estado=document.getElementById('opEstado').value;
+  const notas=document.getElementById('opNotas').value.trim();
+  if(!vehiculo||!vendedora||!compradora){showToast('Completá los campos obligatorios','red');return;}
+  if(vendedora===compradora){showToast('La agencia vendedora y compradora no pueden ser la misma','red');return;}
+  const comision=Math.round(precio*(config.comision||2)/100);
+  operaciones.push({id:Date.now(),vehiculo,agenciaVendedora:vendedora,agenciaCompradora:compradora,precio,comisionMonto:comision,estado,fecha:new Date().toLocaleDateString('es-AR'),detalle:notas});
+  if(estado==='concretada'){
+    const av=agencias.find(a=>a.nombre===vendedora); if(av) av.operaciones++;
+    const ac=agencias.find(a=>a.nombre===compradora); if(ac) ac.operaciones++;
+  }
+  closeModal('modalNuevaOperacion');
+  ['opVehiculo','opNotas'].forEach(id=>document.getElementById(id).value='');
+  document.getElementById('opPrecio').value='';
+  refreshData(); showToast('Operación registrada','green');
+}
+
+function verOperacion(id) {
+  const o=operaciones.find(x=>x.id===id); if(!o) return;
+  document.getElementById('verOpTitulo').textContent=o.vehiculo;
+  document.getElementById('verOpBody').innerHTML=`
+    <div class="detail-row">
+      <div><div class="detail-field-lbl">Estado</div>${o.estado==='concretada'?'<span class="badge badge-green">Concretada</span>':'<span class="badge badge-red">Cancelada</span>'}</div>
+      <div><div class="detail-field-lbl">Fecha</div><div class="detail-field-val">${o.fecha||'—'}</div></div>
+      <div><div class="detail-field-lbl">Agencia vendedora</div><div class="detail-field-val">${o.agenciaVendedora}</div></div>
+      <div><div class="detail-field-lbl">Agencia compradora</div><div class="detail-field-val">${o.agenciaCompradora}</div></div>
+      <div><div class="detail-field-lbl">Precio de venta</div><div class="detail-field-val">${o.precio?'$'+o.precio.toLocaleString('es-AR'):'—'}</div></div>
+      <div><div class="detail-field-lbl">Comisión Red de Autos</div><div class="detail-field-val" style="color:var(--green);font-weight:700">${o.comisionMonto?'$'+o.comisionMonto.toLocaleString('es-AR'):'—'}</div></div>
+    </div>
+    ${o.detalle?`<div style="padding:12px;background:var(--gray-50);border-radius:var(--radius-sm);font-size:13px;color:var(--gray-600)"><strong>Notas:</strong> ${o.detalle}</div>`:''}
+    <div style="display:flex;gap:8px;margin-top:16px">
+      ${o.estado==='concretada'
+        ?`<button class="btn btn-outline btn-sm" style="color:var(--red);border-color:var(--red)" onclick="cancelarOperacion(${o.id})">Marcar como cancelada</button>`
+        :`<button class="btn btn-green btn-sm" onclick="concretarOperacion(${o.id})">Marcar como concretada</button>`}
+      <button class="btn btn-outline btn-sm" onclick="closeModal('modalVerOperacion')">Cerrar</button>
+    </div>`;
+  openModal('modalVerOperacion');
+}
+
+function cancelarOperacion(id) {
+  const o=operaciones.find(x=>x.id===id); if(!o) return;
+  confirmar('Cancelar operación','¿Marcar esta operación como cancelada?','Cancelar operación','var(--red)',()=>{
+    if(o.estado==='concretada'){
+      const av=agencias.find(a=>a.nombre===o.agenciaVendedora); if(av&&av.operaciones>0)av.operaciones--;
+      const ac=agencias.find(a=>a.nombre===o.agenciaCompradora); if(ac&&ac.operaciones>0)ac.operaciones--;
+    }
+    o.estado='cancelada'; closeModal('modalVerOperacion'); refreshData(); showToast('Operación cancelada','red');
+  });
+}
+
+function concretarOperacion(id) {
+  const o=operaciones.find(x=>x.id===id); if(!o) return;
+  o.estado='concretada';
+  const av=agencias.find(a=>a.nombre===o.agenciaVendedora); if(av)av.operaciones++;
+  const ac=agencias.find(a=>a.nombre===o.agenciaCompradora); if(ac)ac.operaciones++;
+  closeModal('modalVerOperacion'); refreshData(); showToast('Operación concretada','green');
+}
+
+function filtrarOperaciones(q) {
+  document.querySelectorAll('#operacionesTable tr[data-id]').forEach(r=>{
+    r.style.display=r.textContent.toLowerCase().includes(q.toLowerCase())?'':'none';
+  });
+}
+
+// ── MATCHES ──
+function crearMatch() {
+  const vehiculo=document.getElementById('matchVehiculo').value.trim();
+  const vendedora=document.getElementById('matchVendedora').value;
+  const compradora=document.getElementById('matchCompradora').value;
+  const notas=document.getElementById('matchNotas').value.trim();
+  if(!vehiculo||!vendedora||!compradora){showToast('Completá los campos obligatorios','red');return;}
+  if(vendedora===compradora){showToast('Las agencias no pueden ser la misma','red');return;}
+  matchesData.push({id:Date.now(),vehiculo,agenciaVendedora:vendedora,agenciaCompradora:compradora,estado:'pendiente',fecha:new Date().toLocaleDateString('es-AR'),notas});
+  const av=agencias.find(a=>a.nombre===vendedora); if(av)av.matches++;
+  const ac=agencias.find(a=>a.nombre===compradora); if(ac)ac.matches++;
+  closeModal('modalNuevoMatch');
+  ['matchVehiculo','matchNotas'].forEach(id=>document.getElementById(id).value='');
+  refreshData(); showToast('Match generado correctamente','green');
+}
+
+function verMatch(id) {
+  const m=matchesData.find(x=>x.id===id); if(!m) return;
+  document.getElementById('verMatchTitulo').textContent='Match: '+m.vehiculo;
+  document.getElementById('verMatchBody').innerHTML=`
+    <div class="detail-row">
+      <div><div class="detail-field-lbl">Estado</div>${{pendiente:'<span class="badge badge-yellow">Pendiente</span>',concretada:'<span class="badge badge-green">Concretada</span>',cancelada:'<span class="badge badge-red">Cancelada</span>'}[m.estado]}</div>
+      <div><div class="detail-field-lbl">Fecha</div><div class="detail-field-val">${m.fecha||'—'}</div></div>
+      <div><div class="detail-field-lbl">Agencia vendedora</div><div class="detail-field-val">${m.agenciaVendedora}</div></div>
+      <div><div class="detail-field-lbl">Agencia compradora</div><div class="detail-field-val">${m.agenciaCompradora}</div></div>
+    </div>
+    ${m.notas?`<div style="padding:12px;background:var(--gray-50);border-radius:var(--radius-sm);font-size:13px;color:var(--gray-600);margin-bottom:16px"><strong>Notas:</strong> ${m.notas}</div>`:''}
+    <div style="display:flex;gap:8px;flex-wrap:wrap">
+      ${m.estado==='pendiente'?`
+        <button class="btn btn-green btn-sm" onclick="cambiarEstadoMatch(${m.id},'concretada')">Marcar concretada</button>
+        <button class="btn btn-outline btn-sm" style="color:var(--red);border-color:var(--red)" onclick="cambiarEstadoMatch(${m.id},'cancelada')">Cancelar match</button>
+      `:''}
+      <button class="btn btn-outline btn-sm" onclick="closeModal('modalVerMatch')">Cerrar</button>
+    </div>`;
+  openModal('modalVerMatch');
+}
+
+function cambiarEstadoMatch(id, estado) {
+  const m=matchesData.find(x=>x.id===id); if(!m) return;
+  m.estado=estado; closeModal('modalVerMatch'); refreshData();
+  showToast('Match actualizado: '+estado, estado==='concretada'?'green':'red');
+}
+
+// ── SOLICITUDES ──
+function aprobarSolicitud(id) {
+  const s=solicitudes.find(x=>x.id===id); if(!s) return;
+  s.estado='aprobada';
+  const initials=s.nombre.split(' ').filter(w=>/[A-Za-z]/.test(w)).map(w=>w[0].toUpperCase()).slice(0,2).join('');
+  agencias.push({id:Date.now(),nombre:s.nombre,ciudad:s.ciudad,tipo:'Agencia',plan:'free',contacto:s.contacto,email:s.email,tel:'',creditos:0,operaciones:0,matches:0,fechaRegistro:new Date().toLocaleDateString('es-AR'),estado:'activo',initials});
+  refreshData(); showToast(`Solicitud de ${s.nombre} aprobada y agencia creada`,'green');
+}
+
+function rechazarSolicitud(id) {
+  const s=solicitudes.find(x=>x.id===id); if(!s) return;
+  confirmar('Rechazar solicitud',`¿Rechazar la solicitud de "${s.nombre}"?`,'Rechazar','var(--red)',()=>{
+    s.estado='rechazada'; refreshData(); showToast('Solicitud rechazada','red');
+  });
+}
+
+// ── DENUNCIAS ──
+function resolverDenuncia(id, resolucion) {
+  const d=denuncias.find(x=>x.id===id); if(!d) return;
+  d.estado=resolucion;
+  if(resolucion==='suspendida'){const a=agencias.find(x=>x.nombre===d.contra);if(a)a.estado='suspendido';}
+  refreshData(); showToast('Denuncia resuelta: '+resolucion, resolucion==='suspendida'?'red':'yellow');
+}
+
+// ── CÓDIGOS ──
+function generarCodigo() {
+  const chars='ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
+  const code=Array.from({length:8},()=>chars[Math.floor(Math.random()*chars.length)]).join('');
+  const now=new Date(), exp=new Date(now); exp.setDate(exp.getDate()+30);
+  codigos.push({id:Date.now(),codigo:code,creado:now.toLocaleDateString('es-AR'),vence:exp.toLocaleDateString('es-AR'),usadoPor:null,estado:'disponible'});
+  refreshData(); showToast('Código '+code+' generado — copialo para enviarlo','green');
+  navigator.clipboard.writeText(code).catch(()=>{});
+}
+
+function copiarCodigo(code) { navigator.clipboard.writeText(code).then(()=>showToast('Código copiado al portapapeles','blue')).catch(()=>showToast('Código: '+code,'blue')); }
+
+function revocarCodigo(id) {
+  confirmar('Revocar código','¿Querés revocar este código? Ya no podrá ser usado.','Revocar','var(--red)',()=>{
+    const c=codigos.find(x=>x.id===id); if(c) c.estado='revocado';
+    refreshData(); showToast('Código revocado','red');
+  });
+}
+
+// ── PAGOS ──
+function actualizarMontoPago(tipo) {
+  document.getElementById('pagoMonto').value = tipo==='premium' ? (config.premio||150000) : (config.credito||50000);
+  document.getElementById('cantCreditosGroup').style.display = tipo==='creditos' ? 'block' : 'none';
+}
+
+function registrarPago() {
+  const agencia=document.getElementById('pagoAgencia').value;
+  const tipo=document.getElementById('pagoTipo').value;
+  const monto=parseFloat(document.getElementById('pagoMonto').value)||0;
+  if(!agencia||!monto){showToast('Completá los campos','red');return;}
+  const cantidad=tipo==='creditos'?parseInt(document.getElementById('pagoCantCreditos').value)||0:0;
+  pagos.push({id:Date.now(),agencia,tipo,detalle:tipo==='premium'?'Suscripción mensual Premium':`Compra de ${cantidad} créditos`,monto,cantidad,fecha:new Date().toLocaleDateString('es-AR')});
+  if(tipo==='premium'){const a=agencias.find(x=>x.nombre===agencia);if(a)a.plan='premium';}
+  if(tipo==='creditos'&&cantidad>0){const a=agencias.find(x=>x.nombre===agencia);if(a)a.creditos+=cantidad;}
+  closeModal('modalRegistrarPago'); refreshData(); showToast('Pago registrado correctamente','green');
+}
+
+// ── VEHÍCULOS ──
+function verVehiculo(id) {
+  const v=vehiculos.find(x=>x.id===id); if(!v) return;
+  document.getElementById('verVehTitulo').textContent=v.vehiculo;
+  const estadoBadge={disponible:'<span class="badge badge-green">Disponible</span>',en_proceso:'<span class="badge badge-yellow">En proceso</span>',vendido:'<span class="badge badge-gray">Vendido</span>'}[v.estado]||'';
+  document.getElementById('verVehBody').innerHTML=`
+    <div class="detail-row">
+      <div><div class="detail-field-lbl">Estado</div>${estadoBadge}</div>
+      <div><div class="detail-field-lbl">Patente</div><div class="detail-field-val" style="font-family:monospace;font-weight:700">${v.patente||'—'}</div></div>
+      <div><div class="detail-field-lbl">Agencia</div><div class="detail-field-val">${v.agencia}</div></div>
+      <div><div class="detail-field-lbl">Ciudad</div><div class="detail-field-val">${v.ciudad}</div></div>
+      <div><div class="detail-field-lbl">Año</div><div class="detail-field-val">${v.anio}</div></div>
+      <div><div class="detail-field-lbl">Kilometraje</div><div class="detail-field-val">${v.km?v.km.toLocaleString('es-AR')+' km':'—'}</div></div>
+      <div><div class="detail-field-lbl">Precio público</div><div class="detail-field-val" style="color:var(--green);font-weight:700">${v.precio?'$'+v.precio.toLocaleString('es-AR'):'—'}</div></div>
+      <div><div class="detail-field-lbl">Precio Gremio</div><div class="detail-field-val" style="color:var(--blue);font-weight:700">${v.precioGremio?'$'+v.precioGremio.toLocaleString('es-AR'):'—'}</div></div>
+    </div>
+    ${v.descripcion?`<div style="padding:12px;background:var(--gray-50);border-radius:var(--radius-sm);font-size:13px;color:var(--gray-600);margin-bottom:16px">${v.descripcion}</div>`:''}
+    <div style="font-size:11px;color:var(--gray-400)">Publicado el ${v.publicado}</div>`;
+  openModal('modalVerVehiculo');
+}
+
+function filtrarVehiculos(q) {
+  document.querySelectorAll('#vehiculosTable tr[data-id]').forEach(r=>{
+    r.style.display=r.textContent.toLowerCase().includes(q.toLowerCase())?'':'none';
+  });
+}
+
+// ── CONFIG ──
+function loadConfigToForm() {
+  if(!config) return;
+  ['Premio','Credito','Delay','Gremio','Comision'].forEach(k=>{
+    const el=document.getElementById('cfg'+k); if(el&&config[k.toLowerCase()]!==undefined) el.value=config[k.toLowerCase()];
+  });
+  ['Gremio','Registro','Notif','Mant','Aprobacion'].forEach(k=>{
+    const el=document.getElementById('tog'+k); if(el&&config[k.toLowerCase()]!==undefined) el.checked=config[k.toLowerCase()];
+  });
+  ['NombrePlat','Region','Email','WA'].forEach(k=>{
+    const el=document.getElementById('cfg'+k); if(el&&config[k.toLowerCase()]!==undefined) el.value=config[k.toLowerCase()];
+  });
+}
+
+function guardarConfig() {
+  config = {
+    premio: parseInt(document.getElementById('cfgPremio').value)||150000,
+    credito: parseInt(document.getElementById('cfgCredito').value)||50000,
+    delay: parseInt(document.getElementById('cfgDelay').value)||3,
+    gremio: parseInt(document.getElementById('cfgGremio').value)||3,
+    comision: parseFloat(document.getElementById('cfgComision').value)||2,
+    gremioOn: document.getElementById('togGremio').checked,
+    registro: document.getElementById('togRegistro').checked,
+    notif: document.getElementById('togNotif').checked,
+    mant: document.getElementById('togMant').checked,
+    aprobacion: document.getElementById('togAprobacion').checked,
+    nombre: document.getElementById('cfgNombrePlat').value,
+    region: document.getElementById('cfgRegion').value,
+    email: document.getElementById('cfgEmail').value,
+    wa: document.getElementById('cfgWA').value,
+  };
+  refreshData(); showToast('Configuración guardada','green');
+}
+
+// ── VISTA CLIENTE ──
+function cargarVistaCliente(agenciaId) {
+  const content=document.getElementById('vistaClienteContent');
+  if(!agenciaId){content.innerHTML=`<div class="empty-state"><svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="2" y="3" width="20" height="14" rx="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/></svg><div class="empty-state-title">Seleccioná una agencia</div></div>`;return;}
+  const a=agencias.find(x=>x.id===parseInt(agenciaId));
+  if(!a){content.innerHTML='<div class="empty-state"><div class="empty-state-title">Agencia no encontrada</div></div>';return;}
+  const agOps=operaciones.filter(o=>o.agenciaVendedora===a.nombre||o.agenciaCompradora===a.nombre);
+  const agMatches=matchesData.filter(m=>(m.agenciaVendedora===a.nombre||m.agenciaCompradora===a.nombre)&&m.estado==='pendiente');
+  const agVehs=vehiculos.filter(v=>v.agencia===a.nombre);
+  content.innerHTML=`
+    <div style="background:linear-gradient(135deg,#1a0a0c,#2d0d11,#E8192C);border-radius:var(--radius);padding:20px 24px;margin-bottom:20px;color:#fff;display:flex;align-items:center;gap:16px">
+      <div style="width:52px;height:52px;border-radius:12px;background:rgba(255,255,255,0.2);display:flex;align-items:center;justify-content:center;font-weight:700;font-size:18px">${a.initials}</div>
+      <div style="flex:1">
+        <div style="font-size:18px;font-weight:700">${a.nombre}</div>
+        <div style="font-size:12px;opacity:0.8">${a.ciudad} · ${a.tipo} · ${a.plan==='premium'?'⭐ Premium':'Free'}</div>
+      </div>
+      <div style="text-align:right"><div style="font-size:12px;opacity:0.7">Créditos disponibles</div><div style="font-size:28px;font-weight:700">${a.creditos}</div></div>
+    </div>
+    <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin-bottom:20px">
+      <div class="stat-card"><div><div class="stat-label">Operaciones</div><div class="stat-value">${agOps.filter(o=>o.estado==='concretada').length}</div></div></div>
+      <div class="stat-card"><div><div class="stat-label">Matches activos</div><div class="stat-value" style="color:var(--purple)">${agMatches.length}</div></div></div>
+      <div class="stat-card"><div><div class="stat-label">Vehículos publicados</div><div class="stat-value" style="color:var(--blue)">${agVehs.filter(v=>v.estado==='disponible').length}</div></div></div>
+      <div class="stat-card"><div><div class="stat-label">Plan activo</div><div class="stat-value" style="font-size:16px">${a.plan==='premium'?'⭐ Premium':'Free'}</div></div></div>
+    </div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px">
+      <div class="card">
+        <div class="card-header"><div><div class="card-title">Matches activos (${agMatches.length})</div></div></div>
+        <div style="padding:16px">
+          ${agMatches.length===0?'<div style="text-align:center;padding:20px;color:var(--gray-400);font-size:13px">Sin matches activos</div>':
+          agMatches.map(m=>`<div style="border:1px solid var(--gray-200);border-radius:var(--radius-sm);padding:12px;margin-bottom:8px">
+            <div style="font-weight:600;font-size:13px">${m.vehiculo}</div>
+            <div style="font-size:11px;color:var(--gray-400);margin-top:3px">
+              ${m.agenciaVendedora===a.nombre?'📤 Vendo a '+m.agenciaCompradora:'📥 Compro de '+m.agenciaVendedora}
+            </div>
+            <div style="font-size:11px;color:var(--gray-500);margin-top:2px">${m.fecha}</div>
+          </div>`).join('')}
+        </div>
+      </div>
+      <div class="card">
+        <div class="card-header"><div><div class="card-title">Vehículos publicados (${agVehs.length})</div></div></div>
+        <div style="padding:16px">
+          ${agVehs.length===0?'<div style="text-align:center;padding:20px;color:var(--gray-400);font-size:13px">Sin vehículos publicados</div>':
+          agVehs.map(v=>`<div style="border:1px solid var(--gray-200);border-radius:var(--radius-sm);padding:12px;margin-bottom:8px;display:flex;align-items:center;justify-content:space-between">
+            <div>
+              <div style="font-weight:600;font-size:13px">${v.vehiculo}</div>
+              <div style="font-size:11px;color:var(--green);font-weight:600">${v.precio?'$'+v.precio.toLocaleString('es-AR'):''}</div>
+            </div>
+            ${{disponible:'<span class="badge badge-green">Disponible</span>',en_proceso:'<span class="badge badge-yellow">En proceso</span>',vendido:'<span class="badge badge-gray">Vendido</span>'}[v.estado]||''}
+          </div>`).join('')}
+        </div>
+      </div>
+    </div>
+    <div class="card" style="margin-top:16px">
+      <div class="card-header"><div><div class="card-title">Últimas operaciones</div></div></div>
+      <table>
+        <thead><tr><th>Vehículo</th><th>Rol</th><th>Estado</th><th>Fecha</th></tr></thead>
+        <tbody>${agOps.length===0?'<tr><td colspan="4" style="text-align:center;padding:30px;color:var(--gray-400);font-size:13px">Sin operaciones</td></tr>':
+          agOps.map(o=>`<tr>
+            <td><strong>${o.vehiculo}</strong></td>
+            <td>${o.agenciaVendedora===a.nombre?'<span class="badge badge-blue">Vendedor</span>':'<span class="badge badge-purple">Comprador</span>'}</td>
+            <td>${o.estado==='concretada'?'<span class="badge badge-green">Concretada</span>':'<span class="badge badge-red">Cancelada</span>'}</td>
+            <td>${o.fecha||'—'}</td>
+          </tr>`).join('')}
+        </tbody>
+      </table>
+    </div>`;
+}
+
+// ── EXPORT ──
+function exportarCSV(tipo) {
+  let rows=[], filename='export.csv';
+  if(tipo==='operaciones'){
+    rows=[['Vehículo','Vendedora','Compradora','Precio','Comisión','Estado','Fecha'],
+      ...operaciones.map(o=>[o.vehiculo,o.agenciaVendedora,o.agenciaCompradora,o.precio||0,o.comisionMonto||0,o.estado,o.fecha||''])];
+    filename='operaciones.csv';
+  } else if(tipo==='pagos'){
+    rows=[['Agencia','Tipo','Detalle','Monto','Fecha'],
+      ...pagos.map(p=>[p.agencia,p.tipo,p.detalle||'',p.monto||0,p.fecha||''])];
+    filename='pagos.csv';
+  } else if(tipo==='codigos'){
+    rows=[['Código','Creado','Vence','Usado por','Estado'],
+      ...codigos.map(c=>[c.codigo,c.creado,c.vence,c.usadoPor||'',c.estado])];
+    filename='codigos.csv';
+  } else if(tipo==='vehiculos'){
+    rows=[['Vehículo','Agencia','Ciudad','Precio','Precio Gremio','Estado','Publicado'],
+      ...vehiculos.map(v=>[v.vehiculo,v.agencia,v.ciudad,v.precio||0,v.precioGremio||0,v.estado,v.publicado||''])];
+    filename='vehiculos.csv';
+  } else { showToast('Tipo de exportación no reconocido','red'); return; }
+  const csv=rows.map(r=>r.map(c=>'"'+String(c).replace(/"/g,'""')+'"').join(',')).join('\n');
+  const blob=new Blob(['\uFEFF'+csv],{type:'text/csv;charset=utf-8;'});
+  const url=URL.createObjectURL(blob), a=document.createElement('a');
+  a.href=url; a.download=filename; a.click(); URL.revokeObjectURL(url);
+  showToast('CSV exportado: '+filename,'green');
+}
+
+function exportarReporte() {
+  const lines=[
+    '=== REPORTE RED DE AUTOS ===',
+    'Generado: '+new Date().toLocaleString('es-AR'),
+    '',
+    '── AGENCIAS ──',
+    'Total: '+agencias.length,
+    'Premium: '+agencias.filter(a=>a.plan==='premium').length,
+    'Free: '+agencias.filter(a=>a.plan==='free').length,
+    'Suspendidas: '+agencias.filter(a=>a.estado==='suspendido').length,
+    '',
+    '── OPERACIONES ──',
+    'Total: '+operaciones.length,
+    'Concretadas: '+operaciones.filter(o=>o.estado==='concretada').length,
+    'Canceladas: '+operaciones.filter(o=>o.estado==='cancelada').length,
+    'Comisiones totales: $'+operaciones.filter(o=>o.estado==='concretada').reduce((s,o)=>s+(o.comisionMonto||0),0).toLocaleString('es-AR'),
+    '',
+    '── MATCHES ──',
+    'Total: '+matchesData.length,
+    'Pendientes: '+matchesData.filter(m=>m.estado==='pendiente').length,
+    'Concretados: '+matchesData.filter(m=>m.estado==='concretada').length,
+    '',
+    '── INGRESOS ──',
+    'Total: $'+pagos.reduce((s,p)=>s+(p.monto||0),0).toLocaleString('es-AR'),
+    'Suscripciones: '+pagos.filter(p=>p.tipo==='premium').length,
+    'MRR: $'+(agencias.filter(a=>a.plan==='premium').length*(config.premio||150000)).toLocaleString('es-AR'),
+    '',
+    '── VEHÍCULOS ──',
+    'Total publicados: '+vehiculos.length,
+    'Disponibles: '+vehiculos.filter(v=>v.estado==='disponible').length,
+  ];
+  const blob=new Blob([lines.join('\n')],{type:'text/plain;charset=utf-8;'});
+  const url=URL.createObjectURL(blob), a=document.createElement('a');
+  a.href=url; a.download='reporte-red-de-autos.txt'; a.click(); URL.revokeObjectURL(url);
+  showToast('Reporte exportado','green');
+}
+
+function exportarTodosLosDatos() {
+  const data=JSON.stringify({agencias,operaciones,matchesData,solicitudes,denuncias,codigos,pagos,vehiculos,config},null,2);
+  const blob=new Blob([data],{type:'application/json'});
+  const url=URL.createObjectURL(blob), a=document.createElement('a');
+  a.href=url; a.download='backup-red-de-autos-'+new Date().toISOString().slice(0,10)+'.json'; a.click(); URL.revokeObjectURL(url);
+  showToast('Backup exportado','green');
+}
+
+function limpiarTodosLosDatos() {
+  confirmar('⚠️ Limpiar todos los datos','Esta acción eliminará TODOS los datos del sistema. No se puede deshacer. ¿Estás completamente seguro?','Limpiar todo','var(--red)',()=>{
+    resetToDefaults(); localStorage.removeItem(STORE_KEY); localStorage.removeItem('redautos_client_sync');
+    refreshData(); showToast('Todos los datos eliminados','red');
+  });
+}
+
+// ── RENDERS ──
+function renderDashboard() {
+  const totalAg=agencias.length;
+  const premium=agencias.filter(a=>a.plan==='premium').length;
+  const opCerr=operaciones.filter(o=>o.estado==='concretada').length;
+  const activos=matchesData.filter(m=>m.estado==='pendiente').length;
+  const ingresos=pagos.reduce((s,p)=>s+(p.monto||0),0);
+
+  document.getElementById('kpiAgencias').textContent=totalAg;
+  document.getElementById('kpiAgenciasSub').textContent=totalAg>0?premium+' Premium · '+(totalAg-premium)+' Free':'en la red';
+  document.getElementById('kpiOperaciones').textContent=opCerr;
+  document.getElementById('kpiOperacionesSub').textContent=operaciones.length>0?operaciones.length+' total registradas':'este mes';
+  document.getElementById('kpiIngresos').textContent='$'+ingresos.toLocaleString('es-AR');
+  document.getElementById('kpiIngresosSub').textContent=pagos.length>0?pagos.length+' transacciones':'en suscripciones';
+  document.getElementById('kpiMatches').textContent=matchesData.length;
+  document.getElementById('kpiMatchesSub').textContent=activos+' en seguimiento';
+
+  // Alerts
+  const alerts=[];
+  const pendSolic=solicitudes.filter(s=>s.estado==='pendiente').length;
+  const pendDen=denuncias.filter(d=>d.estado==='pendiente').length;
+  if(pendSolic>0) alerts.push({type:'warning',msg:`<strong>${pendSolic} solicitudes de acceso</strong> pendientes de revisión. <a href="#" class="link" onclick="showAdminPage('solicitudes',null)">Ver solicitudes →</a>`});
+  if(pendDen>0)   alerts.push({type:'danger',msg:`<strong>${pendDen} denuncias</strong> requieren atención. <a href="#" class="link" onclick="showAdminPage('denuncias',null)">Ver denuncias →</a>`});
+  if(codigos.filter(c=>c.estado==='disponible').length===0) alerts.push({type:'info',msg:'No hay códigos de invitación disponibles. <a href="#" class="link" onclick="showAdminPage(\'codigos\',null)">Generá nuevos →</a>'});
+  if(agencias.length>0&&operaciones.length===0) alerts.push({type:'info',msg:'Todavía no hay operaciones registradas. <a href="#" class="link" onclick="openModal(\'modalNuevaOperacion\')">Registrá la primera →</a>'});
+  document.getElementById('dashAlerts').innerHTML=alerts.map(a=>`<div class="alert-banner alert-${a.type}">${a.msg}</div>`).join('');
+
+  // City chart
+  const ciudades={};
+  agencias.forEach(a=>{ciudades[a.ciudad]=(ciudades[a.ciudad]||0)+1;});
+  const sorted=Object.entries(ciudades).sort((a,b)=>b[1]-a[1]);
+  const maxC=sorted[0]?.[1]||1;
+  const colors=['#E8192C','#2563EB','#16A34A','#CA8A04','#7C3AED','#9CA3AF'];
+  document.getElementById('cityChart').innerHTML=sorted.length===0
+    ?'<div style="text-align:center;padding:30px;color:var(--gray-400);font-size:13px">Sin datos aún</div>'
+    :`<div class="chart-bar-wrap">${sorted.map(([c,n],i)=>`<div class="chart-bar-row"><div class="chart-bar-label" title="${c}">${c}</div><div class="chart-bar-track"><div class="chart-bar-fill" style="width:${Math.round(n/maxC*100)}%;background:${colors[i%colors.length]}"></div></div><div class="chart-bar-val">${n}</div></div>`).join('')}</div>`;
+
+  // Top agencias
+  const topAg=[...agencias].sort((a,b)=>b.operaciones-a.operaciones).slice(0,5);
+  document.getElementById('topAgencias').innerHTML=topAg.length===0
+    ?'<div style="text-align:center;padding:30px;color:var(--gray-400);font-size:13px">Sin operaciones aún</div>'
+    :`<div class="chart-bar-wrap">${topAg.map(a=>`<div class="chart-bar-row"><div class="chart-bar-label" title="${a.nombre}">${a.nombre}</div><div class="chart-bar-track"><div class="chart-bar-fill" style="width:${Math.round((a.operaciones/(topAg[0].operaciones||1))*100)}%;background:var(--red)"></div></div><div class="chart-bar-val">${a.operaciones}</div></div>`).join('')}</div>`;
+
+  // Revenue chart (últimos 6 meses basado en pagos reales)
+  const months6=['Oct','Nov','Dic','Ene','Feb','Mar'];
+  const rev6=[0,0,0,0,0,0];
+  pagos.forEach(p=>{
+    const d=p.fecha?new Date(p.fecha.split('/').reverse().join('-')):null;
+    if(d&&!isNaN(d)){
+      const monthDiff=((new Date()).getMonth()-d.getMonth()+12)%12;
+      if(monthDiff<6) rev6[5-monthDiff]+=p.monto||0;
+    }
+  });
+  const maxRev=Math.max(...rev6,1);
+  document.getElementById('revenueChart').innerHTML=`
+    <div class="rev-chart">
+      ${months6.map((m,i)=>`<div class="rev-bar-wrap">
+        <div class="rev-bar" style="height:${Math.max(4,Math.round(rev6[i]/maxRev*88))}px;background:${rev6[i]>0?'var(--red)':'var(--gray-200)'}"></div>
+        <div class="rev-label">${m}</div>
+      </div>`).join('')}
+    </div>
+    <div style="font-size:11px;color:var(--gray-400);text-align:center;margin-top:4px">Total: $${rev6.reduce((a,b)=>a+b,0).toLocaleString('es-AR')}</div>`;
+
+  // Activity feed
+  const acts=[];
+  [...agencias].slice(-3).reverse().forEach(a=>acts.push({icon:'🏢',bg:'#EFF6FF',text:`<strong>${a.nombre}</strong> se unió a la red.`,time:a.fechaRegistro}));
+  [...operaciones].filter(o=>o.estado==='concretada').slice(-2).reverse().forEach(o=>acts.push({icon:'✓',bg:'var(--green-light)',text:`Operación cerrada: <strong>${o.vehiculo}</strong>`,time:o.fecha}));
+  [...solicitudes].filter(s=>s.estado==='pendiente').slice(-1).forEach(s=>acts.push({icon:'⏳',bg:'var(--yellow-light)',text:`Nueva solicitud de acceso: <strong>${s.nombre}</strong>`,time:s.fecha}));
+  const actsSorted=acts.slice(0,6);
+  document.getElementById('activityFeed').innerHTML=actsSorted.length===0
+    ?'<div style="text-align:center;padding:40px;color:var(--gray-400);font-size:13px">Sin actividad reciente. Cargá datos demo para ver el panel funcionando.</div>'
+    :actsSorted.map(a=>`<div class="activity-item"><div style="background:${a.bg};font-size:14px;width:32px;height:32px;border-radius:8px;display:flex;align-items:center;justify-content:center;flex-shrink:0">${a.icon}</div><div><div class="activity-text">${a.text}</div><div class="activity-time">${a.time}</div></div></div>`).join('');
+}
+
+function renderAgencias() {
+  const tbody=document.getElementById('agenciasTable');
+  document.getElementById('statTotalAgencias').textContent=agencias.length;
+  document.getElementById('statPremium').textContent=agencias.filter(a=>a.plan==='premium').length;
+  document.getElementById('statFree').textContent=agencias.filter(a=>a.plan==='free').length;
+  document.getElementById('agenciasCountSub').textContent=agencias.length+' agencias registradas';
+  if(agencias.length===0){tbody.innerHTML=`<tr><td colspan="9"><div class="empty-state"><svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/></svg><div class="empty-state-title">No hay agencias registradas</div><div class="empty-state-sub">Agregá una manualmente o cargá datos demo.</div></div></td></tr>`;return;}
+  tbody.innerHTML=agencias.map(a=>{
+    const planBadge=a.plan==='premium'?'<span class="badge badge-yellow">⭐ Premium</span>':'<span class="badge badge-gray">Free</span>';
+    const estadoBadge=a.estado==='activo'?'<span class="badge badge-green"><span class="status-dot dot-green"></span>Activo</span>':'<span class="badge badge-red"><span class="status-dot dot-red"></span>Suspendido</span>';
+    return `<tr data-id="${a.id}" data-plan="${a.plan}">
+      <td><div style="display:flex;align-items:center;gap:10px">
+        <div style="width:34px;height:34px;border-radius:8px;background:var(--red-light);display:flex;align-items:center;justify-content:center;font-weight:700;font-size:11px;color:var(--red);flex-shrink:0">${a.initials}</div>
+        <div><div style="font-weight:600">${a.nombre}</div><div style="font-size:11px;color:var(--gray-400)">${a.email||'Sin email'}</div></div>
+      </div></td>
+      <td>${a.ciudad}</td><td>${a.tipo}</td><td>${planBadge}</td>
+      <td><strong>${a.operaciones}</strong></td>
+      <td><span style="font-weight:600;color:var(--blue)">${a.creditos}</span></td>
+      <td>${a.fechaRegistro}</td><td>${estadoBadge}</td>
+      <td><button class="btn btn-outline btn-sm" onclick="verAgencia(${a.id})" style="font-size:11px">Ver detalle</button></td>
+    </tr>`;
+  }).join('');
+}
+
+function renderOperaciones() {
+  const tbody=document.getElementById('operacionesTable');
+  document.getElementById('opTotal').textContent=operaciones.length;
+  document.getElementById('opConcretadas').textContent=operaciones.filter(o=>o.estado==='concretada').length;
+  document.getElementById('opCanceladas').textContent=operaciones.filter(o=>o.estado==='cancelada').length;
+  document.getElementById('opComisiones').textContent='$'+operaciones.filter(o=>o.estado==='concretada').reduce((s,o)=>s+(o.comisionMonto||0),0).toLocaleString('es-AR');
+  if(operaciones.length===0){tbody.innerHTML='<tr><td colspan="7"><div class="empty-state"><svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22,4 12,14.01 9,11.01"/></svg><div class="empty-state-title">Sin operaciones registradas</div></div></td></tr>';return;}
+  tbody.innerHTML=operaciones.map(o=>`<tr data-id="${o.id}">
+    <td><div style="font-weight:600">${o.vehiculo}</div><div style="font-size:11px;color:var(--gray-400)">${o.detalle||''}</div></td>
+    <td>${o.agenciaVendedora}</td><td>${o.agenciaCompradora}</td>
+    <td style="font-weight:600;color:var(--green)">$${(o.comisionMonto||0).toLocaleString('es-AR')}</td>
+    <td>${o.estado==='concretada'?'<span class="badge badge-green">Concretada</span>':'<span class="badge badge-red">Cancelada</span>'}</td>
+    <td>${o.fecha||'—'}</td>
+    <td><button class="btn btn-outline btn-sm" onclick="verOperacion(${o.id})" style="font-size:11px">Ver</button></td>
+  </tr>`).join('');
+}
+
+function renderMatches() {
+  const tbody=document.getElementById('matchesTable');
+  const total=matchesData.length;
+  const activos=matchesData.filter(m=>m.estado==='pendiente').length;
+  const concret=matchesData.filter(m=>m.estado==='concretada').length;
+  const tasa=total>0?Math.round(concret/total*100):0;
+  document.getElementById('matchTotal').textContent=total;
+  document.getElementById('matchActivos').textContent=activos;
+  document.getElementById('matchConcretados').textContent=concret;
+  document.getElementById('matchTasa').textContent=tasa+'%';
+  if(total===0){tbody.innerHTML='<tr><td colspan="6"><div class="empty-state"><div class="empty-state-title">Sin matches generados</div></div></td></tr>';return;}
+  tbody.innerHTML=matchesData.map(m=>`<tr data-id="${m.id}">
+    <td><div style="font-weight:600">${m.vehiculo}</div></td>
+    <td>${m.agenciaVendedora}</td><td>${m.agenciaCompradora}</td>
+    <td>${m.fecha||'—'}</td>
+    <td>${{pendiente:'<span class="badge badge-yellow">Pendiente</span>',concretada:'<span class="badge badge-green">Concretada</span>',cancelada:'<span class="badge badge-red">Cancelada</span>'}[m.estado]}</td>
+    <td><button class="btn btn-outline btn-sm" onclick="verMatch(${m.id})" style="font-size:11px">Ver</button></td>
+  </tr>`).join('');
+}
+
+function renderVehiculos() {
+  const tbody=document.getElementById('vehiculosTable');
+  const disp=vehiculos.filter(v=>v.estado==='disponible').length;
+  const enP=vehiculos.filter(v=>v.estado==='en_proceso').length;
+  const vend=vehiculos.filter(v=>v.estado==='vendido').length;
+  document.getElementById('vehTotal').textContent=vehiculos.length;
+  document.getElementById('vehDisponibles').textContent=disp;
+  document.getElementById('vehEnProceso').textContent=enP;
+  document.getElementById('vehVendidos').textContent=vend;
+  if(vehiculos.length===0){tbody.innerHTML='<tr><td colspan="8"><div class="empty-state"><div class="empty-state-title">Sin vehículos publicados</div><div class="empty-state-sub">Los vehículos cargados por las agencias aparecerán aquí.</div></div></td></tr>';return;}
+  tbody.innerHTML=vehiculos.map(v=>`<tr data-id="${v.id}">
+    <td><div style="font-weight:600">${v.vehiculo}</div><div style="font-size:11px;color:var(--gray-400)">${v.patente||''} · ${v.km?v.km.toLocaleString('es-AR')+' km':''}</div></td>
+    <td>${v.agencia}</td><td>${v.ciudad}</td>
+    <td style="font-weight:600;color:var(--green)">${v.precio?'$'+v.precio.toLocaleString('es-AR'):'—'}</td>
+    <td style="font-weight:600;color:var(--blue)">${v.precioGremio?'$'+v.precioGremio.toLocaleString('es-AR'):'—'}</td>
+    <td>${{disponible:'<span class="badge badge-green">Disponible</span>',en_proceso:'<span class="badge badge-yellow">En proceso</span>',vendido:'<span class="badge badge-gray">Vendido</span>'}[v.estado]||''}</td>
+    <td>${v.publicado||'—'}</td>
+    <td><button class="btn btn-outline btn-sm" onclick="verVehiculo(${v.id})" style="font-size:11px">Ver</button></td>
+  </tr>`).join('');
+}
+
+function renderSolicitudes() {
+  const pend=solicitudes.filter(s=>s.estado==='pendiente');
+  document.getElementById('navBadgeSolicitudes').textContent=pend.length||'0';
+  if(solicitudes.length===0){
+    document.getElementById('solicitudesList').innerHTML='<div class="empty-state"><svg width="44" height="44" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" style="display:block;margin:0 auto 12px;opacity:0.3"><path d="M16 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="8.5" cy="7" r="4"/><line x1="20" y1="8" x2="20" y2="14"/><line x1="23" y1="11" x2="17" y2="11"/></svg><div class="empty-state-title">Sin solicitudes</div><div class="empty-state-sub">Las nuevas solicitudes de agencias aparecerán aquí.</div></div>';
+    return;
+  }
+  document.getElementById('solicitudesList').innerHTML=solicitudes.map(s=>`
+    <div style="border:1px solid var(--gray-200);border-radius:var(--radius);padding:16px;margin-bottom:12px;display:flex;align-items:center;gap:16px">
+      <div style="width:44px;height:44px;border-radius:10px;background:var(--red-light);display:flex;align-items:center;justify-content:center;font-weight:700;color:var(--red);flex-shrink:0">${s.initials||'?'}</div>
+      <div style="flex:1">
+        <div style="font-weight:700;font-size:14px">${s.nombre}</div>
+        <div style="font-size:12px;color:var(--gray-400)">${s.ciudad} · ${s.contacto} · ${s.email}</div>
+        <div style="font-size:11px;color:var(--gray-500);margin-top:4px">Código: <strong>${s.codigo}</strong> · Solicitado el ${s.fecha}</div>
+      </div>
+      ${s.estado==='pendiente'
+        ?`<div style="display:flex;gap:8px;flex-shrink:0">
+            <button class="btn btn-green btn-sm" onclick="aprobarSolicitud(${s.id})">✓ Aprobar</button>
+            <button class="btn btn-outline btn-sm" style="color:var(--red);border-color:var(--red)" onclick="rechazarSolicitud(${s.id})">✗ Rechazar</button>
+          </div>`
+        :`<span class="badge ${s.estado==='aprobada'?'badge-green':'badge-red'}">${s.estado==='aprobada'?'Aprobada':'Rechazada'}</span>`}
+    </div>`).join('');
+}
+
+function renderDenuncias() {
+  const pend=denuncias.filter(d=>d.estado==='pendiente');
+  document.getElementById('navBadgeDenuncias').textContent=pend.length||'0';
+  if(denuncias.length===0){
+    document.getElementById('denunciasList').innerHTML='<div class="empty-state"><svg width="44" height="44" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" style="display:block;margin:0 auto 12px;opacity:0.3"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/></svg><div class="empty-state-title">Sin denuncias</div></div>';
+    return;
+  }
+  document.getElementById('denunciasList').innerHTML=denuncias.map(d=>`
+    <div style="border:1px solid ${d.estado==='pendiente'?'var(--yellow)':'var(--gray-200)'};border-radius:var(--radius);padding:16px;margin-bottom:12px;background:${d.estado==='pendiente'?'var(--yellow-light)':'#fff'}">
+      <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:12px;margin-bottom:10px">
+        <div>
+          <div style="font-weight:700">Denuncia contra: <span style="color:var(--red)">${d.contra}</span></div>
+          <div style="font-size:12px;color:var(--gray-500)">Por: ${d.porAgencia} · Motivo: ${d.motivo}</div>
+          <div style="font-size:11px;color:var(--gray-400);margin-top:4px">${d.detalle||''} · ${d.fecha}</div>
+        </div>
+        ${d.estado==='pendiente'
+          ?`<div style="display:flex;gap:8px;flex-shrink:0">
+              <button class="btn btn-outline btn-sm" style="color:var(--yellow);border-color:var(--yellow)" onclick="resolverDenuncia(${d.id},'advertencia')">Advertencia</button>
+              <button class="btn btn-outline btn-sm" style="color:var(--red);border-color:var(--red)" onclick="resolverDenuncia(${d.id},'suspendida')">Suspender</button>
+              <button class="btn btn-outline btn-sm" onclick="resolverDenuncia(${d.id},'desestimada')">Desestimar</button>
+            </div>`
+          :`<span class="badge ${d.estado==='desestimada'?'badge-gray':'badge-red'}">${d.estado}</span>`}
+      </div>
+    </div>`).join('');
+}
+
+function renderCodigos() {
+  const total=codigos.length, usados=codigos.filter(c=>c.estado==='usado').length, disp=codigos.filter(c=>c.estado==='disponible').length;
+  document.getElementById('codTotal').textContent=total;
+  document.getElementById('codUsados').textContent=usados;
+  document.getElementById('codDisponibles').textContent=disp;
+  const tbody=document.getElementById('codigosTable');
+  if(total===0){tbody.innerHTML='<tr><td colspan="6" style="text-align:center;color:var(--gray-400);padding:40px;font-size:13px">No hay códigos generados. Hacé clic en "Generar código".</td></tr>';return;}
+  tbody.innerHTML=codigos.map(c=>`<tr>
+    <td><span style="font-family:monospace;font-size:14px;font-weight:700;letter-spacing:2px">${c.codigo}</span></td>
+    <td>${c.creado}</td><td>${c.vence}</td><td>${c.usadoPor||'—'}</td>
+    <td>${{disponible:'<span class="badge badge-green">Disponible</span>',usado:'<span class="badge badge-gray">Usado</span>',revocado:'<span class="badge badge-red">Revocado</span>'}[c.estado]}</td>
+    <td style="display:flex;gap:6px">
+      ${c.estado==='disponible'
+        ?`<button class="btn btn-outline btn-sm" onclick="copiarCodigo('${c.codigo}')" style="font-size:11px">Copiar</button>
+           <button class="btn btn-outline btn-sm" onclick="revocarCodigo(${c.id})" style="font-size:11px;color:var(--red);border-color:var(--red)">Revocar</button>`
+        :'—'}
+    </td>
+  </tr>`).join('');
+}
+
+function renderPagos() {
+  const total=pagos.reduce((s,p)=>s+(p.monto||0),0);
+  const subs=pagos.filter(p=>p.tipo==='premium').length;
+  const cred=pagos.filter(p=>p.tipo==='creditos').reduce((s,p)=>s+(p.cantidad||0),0);
+  const mrr=agencias.filter(a=>a.plan==='premium').length*(config.premio||150000);
+  document.getElementById('ingTotal').textContent='$'+total.toLocaleString('es-AR');
+  document.getElementById('ingSubs').textContent=subs;
+  document.getElementById('ingCreditos').textContent=cred;
+  document.getElementById('ingMRR').textContent='$'+mrr.toLocaleString('es-AR');
+  const tbody=document.getElementById('pagosTable');
+  if(pagos.length===0){tbody.innerHTML='<tr><td colspan="6" style="text-align:center;color:var(--gray-400);padding:48px;font-size:13px">Sin transacciones registradas aún.</td></tr>';return;}
+  tbody.innerHTML=pagos.map(p=>`<tr>
+    <td style="font-weight:500">${p.agencia}</td>
+    <td>${p.tipo==='premium'?'<span class="badge badge-yellow">Premium</span>':'<span class="badge badge-blue">Créditos</span>'}</td>
+    <td style="font-size:12px;color:var(--gray-500)">${p.detalle||'—'}</td>
+    <td style="font-weight:600;color:var(--green)">$${(p.monto||0).toLocaleString('es-AR')}</td>
+    <td><span class="badge badge-green">Aprobado</span></td>
+    <td>${p.fecha||'—'}</td>
+  </tr>`).join('');
+}
+
+function updateNavBadges() {
+  document.getElementById('navBadgeAgencias').textContent=agencias.length||'0';
+  document.getElementById('navBadgeSolicitudes').textContent=solicitudes.filter(s=>s.estado==='pendiente').length||'0';
+  document.getElementById('navBadgeDenuncias').textContent=denuncias.filter(d=>d.estado==='pendiente').length||'0';
+}
+
+// ── TOAST ──
+function showToast(msg, type='green') {
+  const colors={green:'var(--green)',red:'var(--red)',yellow:'var(--yellow)',blue:'var(--blue)',gray:'var(--gray-500)'};
+  const t=document.createElement('div');
+  t.style.cssText=`position:fixed;bottom:24px;right:24px;z-index:9999;background:#fff;border:1px solid var(--gray-200);border-left:4px solid ${colors[type]||colors.green};border-radius:var(--radius-sm);padding:12px 18px;font-family:'Poppins',sans-serif;font-size:13px;font-weight:500;color:var(--gray-900);box-shadow:var(--shadow-lg);animation:slideUp 0.2s ease;min-width:240px;max-width:360px`;
+  t.textContent=msg;
+  document.body.appendChild(t);
+  setTimeout(()=>{t.style.opacity='0';t.style.transition='opacity 0.3s';setTimeout(()=>t.remove(),300);},3500);
+}
+
+// ── INIT ──
+loadData();
+// Pre-populate login stats
+document.getElementById('loginStatAg').textContent=agencias.length;
+document.getElementById('loginStatOp').textContent=operaciones.filter(o=>o.estado==='concretada').length;
+document.getElementById('loginStatIng').textContent='$'+pagos.reduce((s,p)=>s+(p.monto||0),0).toLocaleString('es-AR');
+loadConfigToForm();
+
+// Open selects when modals open
+document.getElementById('modalNuevaOperacion').addEventListener('click',e=>{if(e.target.closest('.modal'))populateAgenciasSelects();});
+document.getElementById('modalNuevoMatch').addEventListener('cick',e=>{if(e.target.closest('.modal'))populateAgenciasSelects();});
+document.getElementById('modalRegistrarPago').addEventListener('click',e=>{if(e.target.closest('.modal'))populateAgenciasSelects();});
+</script>
+</body>
+</html>
