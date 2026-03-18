@@ -269,16 +269,31 @@
         const user = auth.currentUser;
         if (!user) {
           console.warn('fbSaveAll: no hay usuario autenticado');
-          // Try to re-auth if we have stored credentials
           if (window._lastAdminEmail && window._lastAdminPass) {
             await signInWithEmailAndPassword(auth, window._lastAdminEmail, window._lastAdminPass);
           }
         }
+
+        // Leer solicitudes actuales de Firestore para no perderlas
+        let solicitudesActuales = data.solicitudes || [];
+        try {
+          const snap = await getDoc(doc(db, 'sistema', 'datos'));
+          if (snap.exists()) {
+            const remoteSolicitudes = JSON.parse(snap.data().solicitudes || '[]');
+            // Fusionar: agregar solicitudes remotas que no estén en local
+            remoteSolicitudes.forEach(rs => {
+              if (!solicitudesActuales.find(ls => ls.id === rs.id)) {
+                solicitudesActuales.push(rs);
+              }
+            });
+          }
+        } catch(e) { console.warn('merge warning:', e); }
+
         await setDoc(doc(db, 'sistema', 'datos'), {
           agencias:    JSON.stringify(data.agencias    || []),
           operaciones: JSON.stringify(data.operaciones || []),
           matchesData: JSON.stringify(data.matchesData || []),
-          solicitudes: JSON.stringify(data.solicitudes || []),
+          solicitudes: JSON.stringify(solicitudesActuales),
           denuncias:   JSON.stringify(data.denuncias   || []),
           codigos:     JSON.stringify(data.codigos     || []),
           pagos:       JSON.stringify(data.pagos       || []),
@@ -286,6 +301,7 @@
           config:      JSON.stringify(data.config      || {}),
           updatedAt:   Date.now()
         });
+        console.log('✅ Guardado en Firebase. Solicitudes:', solicitudesActuales.length);
       } catch(e) { console.warn('Firebase save error:', e); }
     };
 
