@@ -3429,6 +3429,7 @@
     if (name === 'seguimiento') renderSeguimiento();
     if (name === 'red') renderRed();
     if (name === 'notificaciones') renderNotificaciones();
+    if (name === 'gremio') renderGremioOportunidades();
     if (name === 'busquedas')   _renderBusquedasTable();
     if (name === 'dashboard')   _updateDashboard();
   }
@@ -5219,6 +5220,8 @@
       const el = document.getElementById(id);
       if (el) el.style.display = 'none';
     });
+    if (tab === 'ver') renderGremioOportunidades();
+    if (tab === 'mis') renderMisPublicaciones();
     const map = { ver:'tabVer', mis:'tabMis', ofertas:'tabOfertas' };
     const show = document.getElementById(map[tab]);
     if (show) show.style.display = 'block';
@@ -5440,40 +5443,184 @@
         </div>
       </div>`;
 
-    // Prepend to tabVer
-    const tabVer = document.getElementById('tabVer');
-    if (tabVer) tabVer.prepend(newOp);
+    // Save to Firebase
+    const gremioItem = {
+      id: 'g' + Date.now(),
+      agencia: _currentUser ? _currentUser.nombre : 'Desconocida',
+      emailAgencia: _currentUser ? _currentUser.email : '',
+      marca, modelo, anio, km,
+      precioGremio: precioG,
+      precioPub: precioP,
+      mensaje,
+      fotos,
+      fecha: new Date().toLocaleDateString('es-AR'),
+      estado: 'activo'
+    };
 
-    // ── Add to "Mis publicaciones" tab ──
-    const list = document.getElementById('misGremioList');
-    const misCard = document.createElement('div');
-    misCard.className = 'my-gremio-card';
-    misCard.style.flexDirection = 'column';
-    misCard.style.alignItems = 'stretch';
-    misCard.style.gap = '10px';
-    misCard.innerHTML = `
-      <div style="display:flex;align-items:center;gap:12px">
-        ${fotos.length > 0
-          ? `<div style="width:52px;height:38px;border-radius:8px;overflow:hidden;flex-shrink:0"><img src="${fotos[0]}" style="width:100%;height:100%;object-fit:cover"></div>`
-          : `<div style="width:52px;height:38px;border-radius:8px;background:var(--red-light);display:flex;align-items:center;justify-content:center;flex-shrink:0"><svg width="24" height="14" viewBox="0 0 26 16" fill="none" stroke="var(--red)" stroke-width="1.5"><rect x="1" y="3" width="24" height="9" rx="2"/><circle cx="6" cy="12" r="2.5"/><circle cx="20" cy="12" r="2.5"/><path d="M4 3L6 0h14l2 3"/></svg></div>`}
-        <div class="my-gremio-info" style="flex:1">
-          <div class="my-gremio-name">${marca} ${modelo} ${anio}</div>
-          <div class="my-gremio-sub">Recién publicado · Aguardando contraofertas${fotos.length > 0 ? ' · '+fotos.length+' foto'+(fotos.length>1?'s':'') : ''}</div>
-        </div>
-        <div style="text-align:right">
-          <div style="font-size:11px;color:var(--gray-400);text-decoration:line-through">$${precioP}</div>
-          <div style="font-size:16px;font-weight:700;color:var(--red)">$${precioG}</div>
-          <span class="badge badge-green" style="margin-top:4px">Activo</span>
-        </div>
-      </div>
-      ${fotosHTML}`;
-    list.prepend(misCard);
+    if (window.fbSaveClientData && window.fbLoadDatosRed) {
+      window.fbLoadDatosRed().then(red => {
+        const gremioGlobal = red ? (red.gremioGlobal || []) : [];
+        gremioGlobal.unshift(gremioItem);
+        window.fbSaveClientData('gremioGlobal', gremioGlobal).then(() => {
+          renderGremioOportunidades();
+          renderMisPublicaciones();
+        });
+      });
+    }
 
     // Reset
     window._gremioFotos = [];
     _renderGremioFotoSlots();
     closeModal('modalPublicarGremio');
     showGremioTab('mis', document.getElementById('tabMisBtn'));
+    showToast('✅ Publicación enviada a toda la red', 'success');
+  }
+
+  // ── RENDER OPORTUNIDADES GREMIO (todas las agencias) ──
+  function renderGremioOportunidades() {
+    const tabVer = document.getElementById('tabVer');
+    if (!tabVer) return;
+    const miNombre = _currentUser ? _currentUser.nombre : '';
+
+    if (!window.fbLoadDatosRed) return;
+    window.fbLoadDatosRed().then(red => {
+      const items = red ? (red.gremioGlobal || []) : [];
+      // Solo mostrar activos de OTRAS agencias
+      const otros = items.filter(g => g.agencia !== miNombre && g.estado === 'activo');
+
+      if (otros.length === 0) {
+        tabVer.innerHTML = '<div style="text-align:center;color:var(--gray-400);padding:48px 20px"><svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" style="margin-bottom:12px;opacity:0.3"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/></svg><div style="font-size:14px;font-weight:600;margin-bottom:6px">Sin oportunidades disponibles</div><div style="font-size:12px">Cuando otras agencias publiquen a precio gremio aparecerán acá.</div></div>';
+        return;
+      }
+
+      tabVer.innerHTML = otros.map(g => {
+        const coId = 'co_' + g.id;
+        const ahorro = g.precioPub && g.precioGremio ? Math.round((1 - parseInt(g.precioGremio.replace(/\D/g,'')) / parseInt(g.precioPub.replace(/\D/g,''))) * 100) : 0;
+        const fotosHTML = g.fotos && g.fotos.length > 0
+          ? '<div style="display:grid;grid-template-columns:repeat(3,1fr);gap:6px;margin:10px 0">'
+            + g.fotos.map(src => '<div style="aspect-ratio:4/3;overflow:hidden;border-radius:6px"><img src="' + src + '" style="width:100%;height:100%;object-fit:cover"></div>').join('')
+            + '</div>'
+          : '';
+        return '<div class="gremio-card oportunidad" id="gCard_' + g.id + '">'
+          + '<div class="gremio-card-header">'
+          + '<div style="width:52px;height:38px;border-radius:8px;background:var(--red-light);display:flex;align-items:center;justify-content:center;flex-shrink:0">'
+          + '<svg width="26" height="16" viewBox="0 0 26 16" fill="none" stroke="var(--red)" stroke-width="1.5"><rect x="1" y="3" width="24" height="9" rx="2"/><circle cx="6" cy="12" r="2.5"/><circle cx="20" cy="12" r="2.5"/><path d="M4 3L6 0h14l2 3"/></svg>'
+          + '</div>'
+          + '<div style="flex:1;min-width:0">'
+          + '<div style="font-size:15px;font-weight:700;color:var(--gray-900)">' + g.marca + ' ' + g.modelo + ' ' + g.anio + '</div>'
+          + '<div style="font-size:12px;color:var(--gray-400);margin-top:2px">' + (g.km ? g.km + ' km · ' : '') + g.agencia + ' · ' + g.fecha + '</div>'
+          + '</div>'
+          + '<div style="text-align:right;flex-shrink:0">'
+          + '<div class="precio-pub">$' + g.precioPub + ' público</div>'
+          + '<div class="precio-gremio">$' + g.precioGremio + '</div>'
+          + (ahorro > 0 ? '<div class="precio-ahorro">-' + ahorro + '% vs público</div>' : '')
+          + '</div>'
+          + '<span class="oportunidad-badge">🔥 Gremio</span>'
+          + '</div>'
+          + '<div class="gremio-body">'
+          + fotosHTML
+          + (g.mensaje ? '<div style="font-size:12px;color:var(--gray-600);font-style:italic;margin-top:10px;padding:10px 12px;background:var(--gray-50);border-radius:var(--radius-sm);border-left:3px solid var(--gray-200)">"' + g.mensaje + '"</div>' : '')
+          + '<div style="display:flex;flex-wrap:wrap;align-items:center;gap:10px;margin:12px 0">'
+          + '<span class="dias-badge">⏱ Válido 3 días</span>'
+          + '</div>'
+          + '<div style="display:flex;gap:10px;flex-wrap:wrap">'
+          + '<button class="btn btn-primary" onclick="openModal(&quot;modalContactoGremio&quot;)" style="flex:1;min-width:140px;justify-content:center">Contactar agencia</button>'
+          + '<button class="btn btn-outline" onclick="toggleContraoferta(this.dataset.id)" data-id="' + coId + '" style="flex:1;min-width:140px;justify-content:center">Hacer contraoferta</button>'
+          + '</div>'
+          + '<div class="contraoferta-form" id="' + coId + '"></div>'
+          + '</div>'
+          + '</div>';
+      }).join('');
+    });
+  }
+
+  // ── RENDER MIS PUBLICACIONES ──
+  function renderMisPublicaciones() {
+    const list = document.getElementById('misGremioList');
+    if (!list) return;
+    const miNombre = _currentUser ? _currentUser.nombre : '';
+
+    if (!window.fbLoadDatosRed) return;
+    window.fbLoadDatosRed().then(red => {
+      const items = red ? (red.gremioGlobal || []) : [];
+      const mias = items.filter(g => g.agencia === miNombre);
+
+      const emptyEl = document.getElementById('misGremioEmpty');
+      if (mias.length === 0) {
+        if (emptyEl) emptyEl.style.display = 'block';
+        // Remove any existing cards
+        list.querySelectorAll('.my-gremio-card').forEach(c => c.remove());
+        return;
+      }
+      if (emptyEl) emptyEl.style.display = 'none';
+
+      // Remove existing cards and re-render
+      list.querySelectorAll('.my-gremio-card').forEach(c => c.remove());
+
+      mias.forEach(g => {
+        const card = document.createElement('div');
+        card.className = 'my-gremio-card';
+        card.style.cssText = 'flex-direction:column;align-items:stretch;gap:10px;position:relative';
+        card.id = 'misCard_' + g.id;
+        const fotoThumb = g.fotos && g.fotos.length > 0
+          ? '<div style="width:52px;height:38px;border-radius:8px;overflow:hidden;flex-shrink:0"><img src="' + g.fotos[0] + '" style="width:100%;height:100%;object-fit:cover"></div>'
+          : '<div style="width:52px;height:38px;border-radius:8px;background:var(--red-light);display:flex;align-items:center;justify-content:center;flex-shrink:0"><svg width="24" height="14" viewBox="0 0 26 16" fill="none" stroke="var(--red)" stroke-width="1.5"><rect x="1" y="3" width="24" height="9" rx="2"/><circle cx="6" cy="12" r="2.5"/><circle cx="20" cy="12" r="2.5"/><path d="M4 3L6 0h14l2 3"/></svg></div>';
+        card.innerHTML = '<div style="display:flex;align-items:center;gap:12px">'
+          + fotoThumb
+          + '<div class="my-gremio-info" style="flex:1">'
+          + '<div class="my-gremio-name">' + g.marca + ' ' + g.modelo + ' ' + g.anio + '</div>'
+          + '<div class="my-gremio-sub">' + g.fecha + ' · ' + (g.km ? g.km + ' km · ' : '') + (g.fotos && g.fotos.length > 0 ? g.fotos.length + ' foto' + (g.fotos.length>1?'s':'') : '') + '</div>'
+          + '</div>'
+          + '<div style="text-align:right">'
+          + '<div style="font-size:11px;color:var(--gray-400);text-decoration:line-through">$' + g.precioPub + '</div>'
+          + '<div style="font-size:16px;font-weight:700;color:var(--red)">$' + g.precioGremio + '</div>'
+          + '<span class="badge badge-green" style="margin-top:4px">' + (g.estado === 'activo' ? 'Activo' : 'Inactivo') + '</span>'
+          + '</div>'
+          + '</div>'
+          + '<div style="display:flex;gap:8px;margin-top:8px">'
+          + '<button class="btn btn-outline btn-sm" style="flex:1;justify-content:center;font-size:12px" onclick="editarGremio(' + JSON.stringify(g.id) + ')">'
+          + '<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>'
+          + ' Editar</button>'
+          + '<button class="btn btn-outline btn-sm" style="flex:1;justify-content:center;font-size:12px;color:var(--red);border-color:var(--red)" onclick="eliminarGremio(' + JSON.stringify(g.id) + ')">'
+          + '<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3,6 5,6 21,6"/><path d="M19,6l-1,14a2,2,0,0,1-2,2H8a2,2,0,0,1-2-2L5,6"/></svg>'
+          + ' Eliminar</button>'
+          + '</div>';
+        list.appendChild(card);
+      });
+    });
+  }
+
+  // ── EDITAR PUBLICACIÓN GREMIO ──
+  function editarGremio(id) {
+    if (!window.fbLoadDatosRed) return;
+    window.fbLoadDatosRed().then(red => {
+      const items = red ? (red.gremioGlobal || []) : [];
+      const g = items.find(x => x.id === id);
+      if (!g) return;
+      // Pre-fill form
+      const set = (elId, val) => { const el = document.getElementById(elId); if(el) el.value = val||''; };
+      set('gMarca', g.marca); set('gModelo', g.modelo); set('gAnio', g.anio);
+      set('gKm', g.km); set('gPrecioGremio', g.precioGremio); set('gPrecioPub', g.precioPub);
+      set('gMensaje', g.mensaje);
+      // Store editing id
+      window._editingGremioId = id;
+      openModal('modalPublicarGremio');
+    });
+  }
+
+  // ── ELIMINAR PUBLICACIÓN GREMIO ──
+  function eliminarGremio(id) {
+    if (!confirm('¿Eliminar esta publicación de precio gremio?')) return;
+    if (!window.fbLoadDatosRed || !window.fbSaveClientData) return;
+    window.fbLoadDatosRed().then(red => {
+      const items = red ? (red.gremioGlobal || []) : [];
+      const filtered = items.filter(g => g.id !== id);
+      window.fbSaveClientData('gremioGlobal', filtered).then(() => {
+        renderMisPublicaciones();
+        renderGremioOportunidades();
+        showToast('Publicación eliminada', 'success');
+      });
+    });
   }
 
   // ===== SEGUIMIENTO DE MATCHES =====
