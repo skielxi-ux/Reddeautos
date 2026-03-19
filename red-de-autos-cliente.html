@@ -5544,7 +5544,6 @@
         ${fotosHTML}
         ${mensaje ? `<div style="font-size:12px;color:var(--gray-600);font-style:italic;margin-top:10px;padding:10px 12px;background:var(--gray-50);border-radius:var(--radius-sm);border-left:3px solid var(--gray-200)">"${mensaje}"</div>` : ''}
         <div style="display:flex;flex-wrap:wrap;align-items:center;gap:10px;margin:12px 0">
-          <span class="dias-badge">⏱ Válido 3 días</span>
           <span style="font-size:12px;color:var(--gray-400)">Tu publicación · visible para toda la red</span>
         </div>
         <div style="display:flex;gap:10px;flex-wrap:wrap">
@@ -5663,7 +5662,6 @@
           + fotosHTML
           + (g.mensaje ? '<div style="font-size:12px;color:var(--gray-600);font-style:italic;margin-top:10px;padding:10px 12px;background:var(--gray-50);border-radius:var(--radius-sm);border-left:3px solid var(--gray-200)">"' + g.mensaje + '"</div>' : '')
           + '<div style="display:flex;flex-wrap:wrap;align-items:center;gap:10px;margin:12px 0">'
-          + '<span class="dias-badge">⏱ Válido 3 días</span>'
           + '</div>'
           + '<div style="display:flex;gap:10px;flex-wrap:wrap">'
           + '<button class="btn btn-primary" data-agencia="' + (g.agencia||'').replace(/"/g,'&quot;') + '" data-email="' + (g.emailAgencia||'').replace(/"/g,'&quot;') + '" onclick="contactarGremio(this.dataset.agencia, this.dataset.email)" style="width:100%;justify-content:center">'
