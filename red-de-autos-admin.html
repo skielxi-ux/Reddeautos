@@ -290,16 +290,17 @@
         } catch(e) { console.warn('merge warning:', e); }
 
         await setDoc(doc(db, 'sistema', 'datos'), {
-          agencias:    JSON.stringify(data.agencias    || []),
-          operaciones: JSON.stringify(data.operaciones || []),
-          matchesData: JSON.stringify(data.matchesData || []),
-          solicitudes: JSON.stringify(solicitudesActuales),
-          denuncias:   JSON.stringify(data.denuncias   || []),
-          codigos:     JSON.stringify(data.codigos     || []),
-          pagos:       JSON.stringify(data.pagos       || []),
-          vehiculos:   JSON.stringify(data.vehiculos   || []),
-          config:      JSON.stringify(data.config      || {}),
-          updatedAt:   Date.now()
+          agencias:        JSON.stringify(data.agencias        || []),
+          operaciones:     JSON.stringify(data.operaciones     || []),
+          matchesData:     JSON.stringify(data.matchesData     || []),
+          solicitudes:     JSON.stringify(solicitudesActuales),
+          denuncias:       JSON.stringify(data.denuncias       || []),
+          codigos:         JSON.stringify(data.codigos         || []),
+          pagos:           JSON.stringify(data.pagos           || []),
+          vehiculos:       JSON.stringify(data.vehiculos       || []),
+          config:          JSON.stringify(data.config          || {}),
+          notificaciones:  JSON.stringify(data.notificaciones  || []),
+          updatedAt:       Date.now()
         });
         console.log('✅ Guardado en Firebase. Solicitudes:', solicitudesActuales.length);
       } catch(e) { console.warn('Firebase save error:', e); }
@@ -311,15 +312,16 @@
         if (!snap.exists()) return null;
         const d = snap.data();
         return {
-          agencias:    JSON.parse(d.agencias    || '[]'),
-          operaciones: JSON.parse(d.operaciones || '[]'),
-          matchesData: JSON.parse(d.matchesData || '[]'),
-          solicitudes: JSON.parse(d.solicitudes || '[]'),
-          denuncias:   JSON.parse(d.denuncias   || '[]'),
-          codigos:     JSON.parse(d.codigos     || '[]'),
-          pagos:       JSON.parse(d.pagos       || '[]'),
-          vehiculos:   JSON.parse(d.vehiculos   || '[]'),
-          config:      JSON.parse(d.config      || '{}'),
+          agencias:       JSON.parse(d.agencias       || '[]'),
+          operaciones:    JSON.parse(d.operaciones    || '[]'),
+          matchesData:    JSON.parse(d.matchesData    || '[]'),
+          solicitudes:    JSON.parse(d.solicitudes    || '[]'),
+          denuncias:      JSON.parse(d.denuncias      || '[]'),
+          codigos:        JSON.parse(d.codigos        || '[]'),
+          pagos:          JSON.parse(d.pagos          || '[]'),
+          vehiculos:      JSON.parse(d.vehiculos      || '[]'),
+          config:         JSON.parse(d.config         || '{}'),
+          notificaciones: JSON.parse(d.notificaciones || '[]'),
         };
       } catch(e) { console.warn('Firebase load error:', e); return null; }
     };
@@ -1627,8 +1629,41 @@ function rechazarSolicitud(id) {
 function resolverDenuncia(id, resolucion) {
   const d=denuncias.find(x=>x.id===id); if(!d) return;
   d.estado=resolucion;
+
+  // Suspender agencia si corresponde
   if(resolucion==='suspendida'){const a=agencias.find(x=>x.nombre===d.contra);if(a)a.estado='suspendido';}
-  refreshData(); showToast('Denuncia resuelta: '+resolucion, resolucion==='suspendida'?'red':'yellow');
+
+  // Enviar notificación a la agencia afectada
+  if(resolucion==='advertencia' || resolucion==='suspendida') {
+    const agAfectada = agencias.find(x=>x.nombre===d.contra);
+    if(agAfectada && agAfectada.email) {
+      if(!window._notificaciones) window._notificaciones = [];
+      // Load current notifications from Firebase and add new one
+      if(window.fbLoadAll) {
+        window.fbLoadAll().then(datos => {
+          const notifs = datos.notificaciones || [];
+          notifs.push({
+            id: Date.now(),
+            emailAgencia: agAfectada.email,
+            tipo: resolucion === 'suspendida' ? 'suspension' : 'advertencia',
+            label: resolucion === 'suspendida' ? 'Suspensión' : 'Advertencia',
+            mensaje: resolucion === 'suspendida'
+              ? 'Tu cuenta ha sido suspendida por el equipo de Red de Autos debido a una denuncia en tu contra. Motivo: ' + d.motivo + '. Contactá al administrador para más información.'
+              : 'Recibiste una advertencia del equipo de Red de Autos. Motivo de denuncia: ' + d.motivo + '. Por favor revisá tu comportamiento en la plataforma para evitar sanciones mayores.',
+            denuncia: d.motivo,
+            fecha: new Date().toLocaleDateString('es-AR'),
+            leida: false
+          });
+          if(window.fbSaveAll) {
+            window.fbSaveAll({agencias, operaciones, matchesData, solicitudes, denuncias, codigos, pagos, vehiculos, config, notificaciones: notifs});
+          }
+        });
+      }
+    }
+  }
+
+  refreshData();
+  showToast('Denuncia resuelta: '+resolucion, resolucion==='suspendida'?'red':'yellow');
 }
 
 // ── CÓDIGOS ──

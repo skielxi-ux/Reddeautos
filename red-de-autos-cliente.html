@@ -1173,12 +1173,14 @@
         if (!snap.exists()) return null;
         const d = snap.data();
         return {
-          agencias:    JSON.parse(d.agencias    || '[]'),
-          matchesData: JSON.parse(d.matchesData || '[]'),
-          vehiculos:   JSON.parse(d.vehiculos   || '[]'),
-          operaciones: JSON.parse(d.operaciones || '[]'),
-          codigos:     JSON.parse(d.codigos     || '[]'),
-          config:      JSON.parse(d.config      || '{}'),
+          agencias:       JSON.parse(d.agencias       || '[]'),
+          matchesData:    JSON.parse(d.matchesData    || '[]'),
+          vehiculos:      JSON.parse(d.vehiculos      || '[]'),
+          operaciones:    JSON.parse(d.operaciones    || '[]'),
+          codigos:        JSON.parse(d.codigos        || '[]'),
+          config:         JSON.parse(d.config         || '{}'),
+          notificaciones: JSON.parse(d.notificaciones || '[]'),
+          denuncias:      JSON.parse(d.denuncias      || '[]'),
         };
       } catch(e) { console.warn('fbLoadDatosRed error:', e); return null; }
     };
@@ -1626,6 +1628,15 @@
           <line x1="12" y1="17" x2="12.01" y2="17"/>
         </svg>
         FAQs
+      </button>
+
+      <button class="nav-item" onclick="showPage('notificaciones', this)" id="navNotificaciones">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/>
+          <path d="M13.73 21a2 2 0 0 1-3.46 0"/>
+        </svg>
+        Notificaciones
+        <span class="nav-badge" id="notifBadge" style="display:none;background:var(--red);color:#fff;border-radius:20px;padding:1px 7px;font-size:10px;font-weight:700;margin-left:auto">0</span>
       </button>
     </nav>
 
@@ -2477,6 +2488,31 @@
 
       </div>
     </div>
+
+    <!-- ===================== NOTIFICACIONES ===================== -->
+    <div id="page-notificaciones" class="page">
+      <div class="topbar">
+        <div>
+          <div class="topbar-title">Notificaciones</div>
+          <div class="topbar-sub">Alertas y comunicaciones del equipo de Red de Autos</div>
+        </div>
+      </div>
+      <div class="content">
+        <div id="notificacionesContainer">
+          <div class="empty-state">
+            <div class="empty-icon">
+              <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+                <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/>
+                <path d="M13.73 21a2 2 0 0 1-3.46 0"/>
+              </svg>
+            </div>
+            <div class="empty-title">Sin notificaciones</div>
+            <div class="empty-sub">Acá vas a ver advertencias, suspensiones y comunicados del equipo de Red de Autos.</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
 
     <!-- ========================= RED DE CONCESIONARIOS ========================= -->
     <div id="page-red" class="page">
@@ -3367,6 +3403,7 @@
     if (el) el.classList.add('active');
     if (name === 'seguimiento') renderSeguimiento();
     if (name === 'red') renderRed();
+    if (name === 'notificaciones') renderNotificaciones();
     if (name === 'busquedas')   _renderBusquedasTable();
     if (name === 'dashboard')   _updateDashboard();
   }
@@ -5587,6 +5624,70 @@
     isPremium = user.plan === 'premium';
     updateCreditDisplays();
     _updateDashboard();
+  }
+
+  // ── RENDER NOTIFICACIONES ──
+  function renderNotificaciones() {
+    const container = document.getElementById('notificacionesContainer');
+    if (!container) return;
+    const email = typeof _currentUser !== 'undefined' && _currentUser ? _currentUser.email : null;
+    if (!email) return;
+
+    if (!window.fbLoadDatosRed) {
+      setTimeout(renderNotificaciones, 1000);
+      return;
+    }
+
+    window.fbLoadDatosRed().then(red => {
+      if (!red) return;
+      // Get notifications for this agency
+      const notifs = (red.notificaciones || []).filter(n => n.emailAgencia === email);
+      const badge = document.getElementById('notifBadge');
+      const unread = notifs.filter(n => !n.leida).length;
+
+      if (badge) {
+        badge.style.display = unread > 0 ? 'inline' : 'none';
+        badge.textContent = unread;
+      }
+
+      if (notifs.length === 0) {
+        container.innerHTML = `
+          <div class="empty-state">
+            <div class="empty-icon">
+              <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+                <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/>
+                <path d="M13.73 21a2 2 0 0 1-3.46 0"/>
+              </svg>
+            </div>
+            <div class="empty-title">Sin notificaciones</div>
+            <div class="empty-sub">Acá vas a ver advertencias y comunicados del equipo de Red de Autos.</div>
+          </div>`;
+        return;
+      }
+
+      container.innerHTML = notifs.slice().reverse().map(function(n) {
+        const tipos = {
+          advertencia: { color: 'var(--yellow)', bg: 'var(--yellow-light)', border: '#FDE68A', icon: '⚠️', label: 'Advertencia' },
+          suspension:  { color: 'var(--red)',    bg: 'var(--red-light)',    border: '#FECACA', icon: '🚫', label: 'Suspensión' },
+          info:        { color: 'var(--blue)',   bg: 'var(--blue-light)',   border: '#93C5FD', icon: 'ℹ️', label: 'Información' },
+        };
+        const t = tipos[n.tipo] || tipos.info;
+        const nuevaBadge = !n.leida ? '<span style="background:var(--red);color:#fff;font-size:10px;font-weight:700;padding:2px 8px;border-radius:20px">NUEVA</span>' : '';
+        const denunciaInfo = n.denuncia ? '<div style="font-size:11px;color:var(--gray-500);margin-top:6px">Motivo: <strong>' + n.denuncia + '</strong></div>' : '';
+        return '<div style="border:1px solid ' + t.border + ';border-radius:12px;padding:16px 20px;margin-bottom:12px;background:' + t.bg + ';' + (n.leida?'opacity:0.7':'') + '">'
+          + '<div style="display:flex;align-items:flex-start;gap:12px">'
+          + '<div style="font-size:22px">' + t.icon + '</div>'
+          + '<div style="flex:1">'
+          + '<div style="display:flex;align-items:center;gap:8px;margin-bottom:6px">'
+          + '<span style="font-weight:700;font-size:13px;color:' + t.color + '">' + t.label + '</span>'
+          + nuevaBadge
+          + '<span style="font-size:11px;color:var(--gray-400);margin-left:auto">' + n.fecha + '</span>'
+          + '</div>'
+          + '<p style="font-size:13px;color:var(--gray-700);line-height:1.6;margin:0">' + n.mensaje + '</p>'
+          + denunciaInfo
+          + '</div></div></div>';
+      }).join('');
+    });
   }
 
   // ── RENDER RED DE CONCESIONARIOS ──
