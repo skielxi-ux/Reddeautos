@@ -3813,7 +3813,17 @@
       fecha: new Date().toLocaleDateString('es-AR', {day:'2-digit', month:'short', year:'numeric'}),
       estado: 'activa'
     };
-    _busquedaData.unshift(busqueda);
+    if (window._editingBusquedaId) {
+      // Update existing
+      const idx = _busquedaData.findIndex(b => b.id === window._editingBusquedaId);
+      if (idx >= 0) {
+        busqueda.id = window._editingBusquedaId;
+        _busquedaData[idx] = busqueda;
+      }
+      window._editingBusquedaId = null;
+    } else {
+      _busquedaData.unshift(busqueda);
+    }
 
     // Add row to busquedas table
     _renderBusquedasTable();
@@ -3851,13 +3861,21 @@
       const timerClass = isPremium ? 'timer-badge timer-instant' : 'timer-badge timer-delay';
       const timerText  = isPremium ? '⚡ Instantáneo' : '⏳ 3 días';
       const anioRange  = b.anioD ? (b.anioH ? b.anioD+'–'+b.anioH : 'Desde '+b.anioD) : '—';
-      return `<tr>
+      return `<tr data-bid="${b.id}">
         <td><div class="car-name">${b.marca} ${b.modelo}</div><div class="car-detail">${b.cliente ? 'Cliente: '+b.cliente : 'Sin cliente asignado'}</div></td>
         <td>${anioRange}</td>
         <td>${b.kmMax ? b.kmMax+' km' : '—'}</td>
         <td>${b.presup ? '$'+b.presup : '—'}</td>
         <td><span class="${timerClass}">${timerText}</span></td>
         <td><span class="badge badge-green"><span class="status-dot dot-green"></span>Activa</span></td>
+        <td style="display:flex;gap:6px">
+          <button class="action-btn" title="Editar" onclick="editarBusqueda('${b.id}')" style="background:var(--blue-light);color:var(--blue)">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+          </button>
+          <button class="action-btn" title="Eliminar" onclick="eliminarBusqueda('${b.id}')" style="background:var(--red-light);color:var(--red)">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3,6 5,6 21,6"/><path d="M19,6l-1,14a2,2,0,0,1-2,2H8a2,2,0,0,1-2-2L5,6"/></svg>
+          </button>
+        </td>
       </tr>`;
     }).join('');
   }
@@ -4029,6 +4047,62 @@
   // ===== AUTO MATCH GENERATION =====
   let _matchCounter = 0;
   const _agenciasRed = ['AutoCentro Tucumán','Motors Norte','AutoGroup Sur','Premier Cars','Norte Automotores','El Cruce Automotores'];
+
+  // ── EDITAR / ELIMINAR BÚSQUEDA ──
+  function editarBusqueda(id) {
+    const b = _busquedaData.find(x => x.id === id);
+    if (!b) return;
+    // Pre-fill modal
+    const set = (elId, val) => { const el = document.getElementById(elId); if(el) el.value = val||''; };
+    set('bMarca', b.marca); set('bModelo', b.modelo);
+    set('bAnioDesde', b.anioD); set('bAnioHasta', b.anioH);
+    set('bKmMax', b.kmMax); set('bPresupuesto', b.presup);
+    set('bCliente', b.cliente); set('bNotas', b.notas);
+    if(document.getElementById('bTransmision')) document.getElementById('bTransmision').value = b.transmision || 'Indiferente';
+    if(document.getElementById('bUrgencia')) document.getElementById('bUrgencia').value = b.urgencia || 'Normal';
+    window._editingBusquedaId = id;
+    openModal('modalBusqueda');
+  }
+
+  function eliminarBusqueda(id) {
+    if (!confirm('¿Eliminar esta búsqueda?')) return;
+    _busquedaData = _busquedaData.filter(b => b.id !== id);
+    _renderBusquedasTable();
+    _updateDashboard();
+    _saveLocalData();
+    // Remove from Firebase
+    if (window.fbLoadDatosRed && window.fbSaveClientData) {
+      window.fbLoadDatosRed().then(red => {
+        const global = (red ? red.busquedasGlobal || [] : []).filter(b => b.id !== id);
+        window.fbSaveClientData('busquedasGlobal', global);
+      });
+    }
+    showToast('Búsqueda eliminada', 'success');
+  }
+
+  // ── ELIMINAR MATCH ──
+  function eliminarMatch(id) {
+    if (!confirm('¿Eliminar este match?')) return;
+    const idx = seguimientoData.findIndex(m => m.id === id);
+    if (idx >= 0) seguimientoData.splice(idx, 1);
+    actualizarStatsSeguimiento();
+    // Re-render matches page
+    const container = document.getElementById('matchesContainer');
+    const card = document.getElementById('matchPageCard_' + id);
+    if (card) card.remove();
+    if (container && container.children.length === 0) {
+      container.innerHTML = '<div style="text-align:center;color:var(--gray-400);padding:48px 20px"><div style="font-size:14px;font-weight:600;margin-bottom:6px">Sin matches aún</div></div>';
+    }
+    _saveLocalData();
+    // Remove from Firebase
+    if (window.fbLoadDatosRed && window.fbSaveClientData) {
+      window.fbLoadDatosRed().then(red => {
+        const global = (red ? red.matchesGlobal || [] : []).filter(m => m.id !== id);
+        window.fbSaveClientData('matchesGlobal', global);
+      });
+    }
+    showToast('Match eliminado', 'success');
+  }
 
   // ── PERSISTENCIA LOCAL (backup contra pérdida de datos) ──
   function _saveLocalData() {
@@ -4276,6 +4350,9 @@
         + '</div>'
         + '<span class="' + (isPremium?'timer-badge timer-instant':'timer-badge timer-delay') + '">' + (isPremium?'⚡ Premium':'⏳ Free') + '</span>'
         + '<div style="font-size:15px;font-weight:700;color:var(--red);flex-shrink:0">' + (m.precio||'') + '</div>'
+        + '<button class="action-btn" title="Eliminar match" data-mid="' + m.id + '" onclick="eliminarMatch(this.dataset.mid)" style="background:var(--red-light);color:var(--red);flex-shrink:0">'
+        + '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3,6 5,6 21,6"/><path d="M19,6l-1,14a2,2,0,0,1-2,2H8a2,2,0,0,1-2-2L5,6"/></svg>'
+        + '</button>'
         + '</div>'
         + '<div class="match-card-body" id="matchBody_' + m.id + '">' + bodyHTML + '</div>';
 
