@@ -6276,42 +6276,58 @@
           const miNombre = _currentUser ? _currentUser.nombre : null;
 
           if (miEmail || miNombre) {
-            // Stock propio
+            // Stock propio — solo cargar desde Firebase si hay datos
             const miStock = (red.stockGlobal || []).filter(v =>
               v.emailAgencia === miEmail || v.agencia === miNombre
             );
             if (miStock.length > 0) {
-              _stockData = miStock;
-              // Limpiar tabla y re-renderizar
+              // Merge: agregar los que no están localmente
+              miStock.forEach(v => {
+                if (!_stockData.find(s => s.id === v.id)) {
+                  _stockData.push(v);
+                }
+              });
+              // Re-renderizar tabla
               const tbody = document.getElementById('stockTbody');
-              if (tbody) {
+              if (tbody && _stockData.length > 0) {
                 tbody.innerHTML = '';
                 _stockData.forEach(v => _renderStockRow(v));
               }
             }
+            // Si hay datos locales que no están en Firebase, guardarlos
+            if (_stockData.length > 0 && miStock.length < _stockData.length) {
+              _stockData.forEach(v => _guardarStockEnFirebase(v));
+            }
 
-            // Búsquedas propias
+            // Búsquedas propias — merge igual
             const misBusquedas = (red.busquedasGlobal || []).filter(b =>
               b.emailAgencia === miEmail || b.agencia === miNombre
             );
             if (misBusquedas.length > 0) {
-              _busquedaData = misBusquedas;
+              misBusquedas.forEach(b => {
+                if (!_busquedaData.find(x => x.id === b.id)) {
+                  _busquedaData.push(b);
+                }
+              });
               _renderBusquedasTable();
             }
+            // Si hay datos locales que no están en Firebase, guardarlos
+            if (_busquedaData.length > 0 && misBusquedas.length < _busquedaData.length) {
+              _busquedaData.forEach(b => _guardarBusquedaEnFirebase(b));
+            }
 
-            // Matches propios
+            // Matches propios — solo agregar los nuevos
             const misMatches = (red.matchesGlobal || []).filter(m =>
               m.agencia1 === miNombre || m.agencia2 === miNombre
             );
             if (misMatches.length > 0) {
-              // Add to seguimiento only if not already there
               misMatches.forEach(m => {
                 if (!seguimientoData.find(s => s.id === m.id)) {
                   seguimientoData.unshift(m);
                 }
               });
               actualizarStatsSeguimiento();
-              _renderMatchesPage(misMatches);
+              if (misMatches.length > 0) _renderMatchesPage(misMatches);
             }
           }
 
