@@ -1210,13 +1210,20 @@
       return onSnapshot(doc(db, 'sistema', 'datos'), snap => {
         if (snap.exists()) {
           const d = snap.data();
+          const sp = (v) => { if(!v) return []; if(Array.isArray(v)) return v; try{return JSON.parse(v);}catch(e){return [];} };
+          const so = (v) => { if(!v) return {}; if(typeof v==='object'&&!Array.isArray(v)) return v; try{return JSON.parse(v);}catch(e){return {};} };
           callback({
-            agencias:    JSON.parse(d.agencias    || '[]'),
-            matchesData: JSON.parse(d.matchesData || '[]'),
-            vehiculos:   JSON.parse(d.vehiculos   || '[]'),
-            operaciones: JSON.parse(d.operaciones || '[]'),
-            codigos:     JSON.parse(d.codigos     || '[]'),
-            config:      JSON.parse(d.config      || '{}'),
+            agencias:        sp(d.agencias),
+            matchesData:     sp(d.matchesData),
+            vehiculos:       sp(d.vehiculos),
+            operaciones:     sp(d.operaciones),
+            codigos:         sp(d.codigos),
+            config:          so(d.config),
+            notificaciones:  sp(d.notificaciones),
+            denuncias:       sp(d.denuncias),
+            stockGlobal:     sp(d.stockGlobal),
+            busquedasGlobal: sp(d.busquedasGlobal),
+            matchesGlobal:   sp(d.matchesGlobal),
           });
         }
       });
