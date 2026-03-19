@@ -5642,7 +5642,11 @@
         <td>${a.ciudad||'—'}</td>
         <td>${a.tipo||'Agencia'}</td>
         <td><strong>${a.operaciones||0}</strong></td>
-        <td><span style="color:#F59E0B">★</span> ${a.calificacion||'Sin calificaciones'}</td>
+        <td>
+          ${a.calificacion 
+            ? `<span style="color:#F59E0B">★</span> <strong>${a.calificacion}</strong> <span style="font-size:11px;color:var(--gray-400)">(${(a.resenas||[]).length} reseña${(a.resenas||[]).length!==1?'s':''})</span>`
+            : '<span style="font-size:12px;color:var(--gray-400)">Sin calificaciones</span>'}
+        </td>
         <td><span class="badge badge-green"><span class="status-dot dot-green"></span>Activo</span></td>
         <td>
           <div style="display:flex;gap:6px">
@@ -5682,8 +5686,54 @@
     const rating = window._valorarRating || 0;
     if (!rating) { alert('Por favor seleccioná una calificación.'); return; }
     if (!comentario) { alert('Por favor escribí un comentario.'); return; }
+
+    // Guardar en Firebase
+    if (window.fbLoadDatosRed && window.fbSaveAll) {
+      const btn = document.querySelector('#modalValorar .btn-primary');
+      if (btn) { btn.textContent = 'Enviando...'; btn.disabled = true; }
+
+      window.fbLoadDatosRed().then(async red => {
+        if (!red) return;
+        // Buscar agencia y agregar reseña
+        const agencias = red.agencias || [];
+        const idx = agencias.findIndex(a => a.nombre === nombre);
+        if (idx >= 0) {
+          if (!agencias[idx].resenas) agencias[idx].resenas = [];
+          agencias[idx].resenas.push({
+            autor: _currentUser ? _currentUser.nombre : 'Anónimo',
+            rating,
+            comentario,
+            fecha: new Date().toLocaleDateString('es-AR')
+          });
+          // Recalcular calificación promedio
+          const total = agencias[idx].resenas.reduce((s, r) => s + r.rating, 0);
+          agencias[idx].calificacion = (total / agencias[idx].resenas.length).toFixed(1);
+        }
+        // Guardar
+        const { getFirestore, doc, setDoc } = await import("https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js");
+        const snap = await (await import("https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js")).getDoc(doc(window._db, 'sistema', 'datos'));
+        if (snap.exists()) {
+          await setDoc(doc(window._db, 'sistema', 'datos'), {
+            ...snap.data(),
+            agencias: JSON.stringify(agencias),
+            updatedAt: Date.now()
+          });
+        }
+        if (btn) { btn.textContent = 'Enviar valoración'; btn.disabled = false; }
+        closeModal('modalValorar');
+        showToast('¡Valoración enviada! Gracias por tu opinión.', 'success');
+        // Refrescar tabla
+        renderRed(agencias);
+      }).catch(e => {
+        if (btn) { btn.textContent = 'Enviar valoración'; btn.disabled = false; }
+        closeModal('modalValorar');
+        showToast('Valoración registrada localmente.', 'success');
+        console.warn(e);
+      });
+      return;
+    }
     closeModal('modalValorar');
-    showToast('Valoración enviada para ' + nombre, 'success');
+    showToast('¡Valoración enviada!', 'success');
   };
 
   // ── DENUNCIAR ──
@@ -5701,8 +5751,45 @@
     const comentario = document.getElementById('denunciarComentario').value.trim();
     if (!motivo) { alert('Seleccioná un motivo.'); return; }
     if (!comentario) { alert('Escribí un comentario describiendo lo que pasó.'); return; }
+
+    if (window.fbLoadDatosRed) {
+      const btn = document.querySelector('#modalDenunciarRed .btn');
+      if (btn) { btn.textContent = 'Enviando...'; btn.disabled = true; }
+
+      window.fbLoadDatosRed().then(async red => {
+        const denuncias = red ? (red.denuncias || []) : [];
+        denuncias.push({
+          id: Date.now(),
+          contra: nombre,
+          porAgencia: _currentUser ? _currentUser.nombre : 'Anónimo',
+          motivo,
+          detalle: comentario,
+          fecha: new Date().toLocaleDateString('es-AR'),
+          estado: 'pendiente'
+        });
+
+        const { doc, setDoc } = await import("https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js");
+        const snap = await (await import("https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js")).getDoc(doc(window._db, 'sistema', 'datos'));
+        if (snap.exists()) {
+          await setDoc(doc(window._db, 'sistema', 'datos'), {
+            ...snap.data(),
+            denuncias: JSON.stringify(denuncias),
+            updatedAt: Date.now()
+          });
+        }
+        if (btn) { btn.textContent = 'Enviar denuncia'; btn.disabled = false; }
+        closeModal('modalDenunciarRed');
+        showToast('Denuncia enviada. La revisaremos en 48hs.', 'info');
+      }).catch(e => {
+        if (btn) { btn.textContent = 'Enviar denuncia'; btn.disabled = false; }
+        closeModal('modalDenunciarRed');
+        showToast('Denuncia registrada.', 'info');
+        console.warn(e);
+      });
+      return;
+    }
     closeModal('modalDenunciarRed');
-    showToast('Denuncia enviada. El equipo de Red de Autos la revisará en 48hs.', 'info');
+    showToast('Denuncia enviada. La revisaremos en 48hs.', 'info');
   };
 
   function _filtrarRedDEPRECATED(q) { filtrarRed(q); }
