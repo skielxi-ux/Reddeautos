@@ -5754,10 +5754,18 @@
     if (!comentario) { alert('Por favor escribí un comentario.'); return; }
 
     // Guardar en Firebase
-    if (window.fbLoadDatosRed && window._db) {
-      const btn = document.querySelector('#modalValorar .btn-primary');
-      if (btn) { btn.textContent = 'Enviando...'; btn.disabled = true; }
+    const btn2 = document.querySelector('#modalValorar .btn-primary');
+    if (btn2) { btn2.textContent = 'Enviando...'; btn2.disabled = true; }
 
+    // Esperar a que Firebase esté listo
+    let intentos2 = 0;
+    while (!window.fbLoadDatosRed && intentos2 < 20) {
+      await new Promise(r => setTimeout(r, 200));
+      intentos2++;
+    }
+
+    if (window.fbLoadDatosRed && window._db) {
+      const btn = btn2;
       try {
         const red = await window.fbLoadDatosRed();
         const agencias = red ? (red.agencias || []) : [];
@@ -5805,6 +5813,14 @@
 
     const btn = document.querySelector('#modalDenunciarRed button:last-child');
     if (btn) { btn.textContent = 'Enviando...'; btn.disabled = true; }
+
+    // Esperar a que Firebase esté listo
+    let intentos = 0;
+    while (!window.fbLoadDatosRed && intentos < 20) {
+      await new Promise(r => setTimeout(r, 200));
+      intentos++;
+    }
+
     try {
       const red = window.fbLoadDatosRed ? await window.fbLoadDatosRed() : null;
       const denuncias = red ? (red.denuncias || []) : [];
