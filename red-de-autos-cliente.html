@@ -4113,6 +4113,7 @@
         stockData: _stockData,
         busquedaData: _busquedaData,
         seguimientoData: seguimientoData,
+        gremioData: window._miGremioData || [],
         savedAt: Date.now()
       }));
     } catch(e) { console.warn('localStorage save error:', e); }
@@ -4142,6 +4143,10 @@
           if (!seguimientoData.find(s => s.id === m.id)) seguimientoData.unshift(m);
         });
         actualizarStatsSeguimiento();
+        loaded = true;
+      }
+      if (d.gremioData && d.gremioData.length > 0) {
+        window._miGremioData = d.gremioData;
         loaded = true;
       }
       return loaded;
@@ -5585,6 +5590,16 @@
       estado: 'activo'
     };
 
+    // Save to local cache immediately
+    if (!window._miGremioData) window._miGremioData = [];
+    if (window._editingGremioId) {
+      const idx = window._miGremioData.findIndex(g => g.id === window._editingGremioId);
+      if (idx >= 0) window._miGremioData[idx] = { ...gremioItem, id: window._editingGremioId };
+    } else {
+      window._miGremioData.unshift(gremioItem);
+    }
+    _saveLocalData();
+
     if (window.fbSaveClientData && window.fbLoadDatosRed) {
       // Always reload fresh from Firebase before saving to avoid overwriting others
       window.fbLoadDatosRed().then(red => {
@@ -5680,11 +5695,22 @@
     const list = document.getElementById('misGremioList');
     if (!list) return;
     const miNombre = _currentUser ? _currentUser.nombre : '';
+    const miEmail  = _currentUser ? _currentUser.email : '';
+
+    // Show from local cache immediately
+    if (window._miGremioData && window._miGremioData.length > 0) {
+      _renderMisPublicacionesUI(window._miGremioData, list);
+    }
 
     if (!window.fbLoadDatosRed) return;
     window.fbLoadDatosRed().then(red => {
       const items = red ? (red.gremioGlobal || []) : [];
-      const mias = items.filter(g => g.agencia === miNombre);
+      const mias = items.filter(g => g.agencia === miNombre || g.emailAgencia === miEmail);
+      // Update local cache with Firebase data
+      if (mias.length > 0) {
+        window._miGremioData = mias;
+        _saveLocalData();
+      }
 
       const emptyEl = document.getElementById('misGremioEmpty');
       if (mias.length === 0) {
@@ -5696,9 +5722,21 @@
       if (emptyEl) emptyEl.style.display = 'none';
 
       // Remove existing cards and re-render
-      list.querySelectorAll('.my-gremio-card').forEach(c => c.remove());
+      _renderMisPublicacionesUI(mias, list);
+    });
+  }
 
-      mias.forEach(g => {
+  function _renderMisPublicacionesUI(mias, list) {
+    if (!list) list = document.getElementById('misGremioList');
+    if (!list) return;
+    list.querySelectorAll('.my-gremio-card').forEach(c => c.remove());
+    const emptyEl = document.getElementById('misGremioEmpty');
+    if (mias.length === 0) {
+      if (emptyEl) emptyEl.style.display = 'block';
+      return;
+    }
+    if (emptyEl) emptyEl.style.display = 'none';
+    mias.forEach(g => {
         const card = document.createElement('div');
         card.className = 'my-gremio-card';
         card.style.cssText = 'flex-direction:column;align-items:stretch;gap:10px;position:relative';
@@ -5728,7 +5766,6 @@
           + '</div>';
         list.appendChild(card);
       });
-    });
   }
 
   // ── EDITAR PUBLICACIÓN GREMIO ──
@@ -5796,6 +5833,11 @@
       const filtered = items.filter(g => g.id !== id);
       return window.fbSaveClientData('gremioGlobal', filtered);
     }).then(() => {
+      // Update local cache
+      if (window._miGremioData) {
+        window._miGremioData = window._miGremioData.filter(g => g.id !== id);
+        _saveLocalData();
+      }
       renderMisPublicaciones();
       renderGremioOportunidades();
       showToast('Publicación eliminada', 'success');
