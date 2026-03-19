@@ -1173,14 +1173,17 @@
         if (!snap.exists()) return null;
         const d = snap.data();
         return {
-          agencias:       JSON.parse(d.agencias       || '[]'),
-          matchesData:    JSON.parse(d.matchesData    || '[]'),
-          vehiculos:      JSON.parse(d.vehiculos      || '[]'),
-          operaciones:    JSON.parse(d.operaciones    || '[]'),
-          codigos:        JSON.parse(d.codigos        || '[]'),
-          config:         JSON.parse(d.config         || '{}'),
-          notificaciones: JSON.parse(d.notificaciones || '[]'),
-          denuncias:      JSON.parse(d.denuncias      || '[]'),
+          agencias:        JSON.parse(d.agencias        || '[]'),
+          matchesData:     JSON.parse(d.matchesData     || '[]'),
+          vehiculos:       JSON.parse(d.vehiculos       || '[]'),
+          operaciones:     JSON.parse(d.operaciones     || '[]'),
+          codigos:         JSON.parse(d.codigos         || '[]'),
+          config:          JSON.parse(d.config          || '{}'),
+          notificaciones:  JSON.parse(d.notificaciones  || '[]'),
+          denuncias:       JSON.parse(d.denuncias       || '[]'),
+          stockGlobal:     JSON.parse(d.stockGlobal     || '[]'),
+          busquedasGlobal: JSON.parse(d.busquedasGlobal || '[]'),
+          matchesGlobal:   JSON.parse(d.matchesGlobal   || '[]'),
         };
       } catch(e) { console.warn('fbLoadDatosRed error:', e); return null; }
     };
@@ -3771,6 +3774,10 @@
     _renderBusquedasTable();
     // Update dashboard stats
     _updateDashboard();
+
+    // Guardar en Firebase para matching global
+    _guardarBusquedaEnFirebase(busqueda);
+
     // Try to generate matches
     _tryGenerateMatches();
 
@@ -3848,6 +3855,10 @@
     _renderStockRow(vehiculo);
     // Update dashboard
     _updateDashboard();
+
+    // Guardar en Firebase para matching global
+    _guardarStockEnFirebase(vehiculo);
+
     // Try to generate matches
     _tryGenerateMatches();
 
@@ -3974,54 +3985,136 @@
   let _matchCounter = 0;
   const _agenciasRed = ['AutoCentro Tucumán','Motors Norte','AutoGroup Sur','Premier Cars','Norte Automotores','El Cruce Automotores'];
 
+  // ── GUARDAR STOCK Y BÚSQUEDAS EN FIREBASE ──
+  async function _guardarStockEnFirebase(vehiculo) {
+    if (!window.fbSaveClientData || !window.fbLoadDatosRed) return;
+    try {
+      const red = await window.fbLoadDatosRed();
+      const stockGlobal = red ? (red.stockGlobal || []) : [];
+      // Remove old entries from same agencia+id if exist
+      const filtered = stockGlobal.filter(v => v.id !== vehiculo.id);
+      filtered.push({ ...vehiculo, agencia: _currentUser ? _currentUser.nombre : 'Desconocida', emailAgencia: _currentUser ? _currentUser.email : '' });
+      await window.fbSaveClientData('stockGlobal', filtered);
+    } catch(e) { console.warn('guardarStock error:', e); }
+  }
+
+  async function _guardarBusquedaEnFirebase(busqueda) {
+    if (!window.fbSaveClientData || !window.fbLoadDatosRed) return;
+    try {
+      const red = await window.fbLoadDatosRed();
+      const busquedasGlobal = red ? (red.busquedasGlobal || []) : [];
+      const filtered = busquedasGlobal.filter(b => b.id !== busqueda.id);
+      filtered.push({ ...busqueda, agencia: _currentUser ? _currentUser.nombre : 'Desconocida', emailAgencia: _currentUser ? _currentUser.email : '' });
+      await window.fbSaveClientData('busquedasGlobal', filtered);
+    } catch(e) { console.warn('guardarBusqueda error:', e); }
+  }
+
   function _tryGenerateMatches() {
-    if (_stockData.length === 0 || _busquedaData.length === 0) return;
+    // Local matches (misma agencia - fallback)
+    if (_stockData.length === 0 && _busquedaData.length === 0) return;
+    _tryGenerateMatchesCrossAgency();
+  }
 
-    // Generate 1 match per stock item + busqueda pair (simplified simulation)
-    const nuevosMatches = [];
-    _stockData.forEach(v => {
-      _busquedaData.forEach(b => {
-        const alreadyMatched = seguimientoData.some(m => m._stockId === v.id && m._busqId === b.id);
-        if (alreadyMatched) return;
+  // ── MOTOR DE MATCHES REAL (cross-agency via Firebase) ──
+  async function _tryGenerateMatchesCrossAgency() {
+    if (!window.fbLoadDatosRed) return;
+    if (!_currentUser) return;
 
-        // Simple matching: same marca or modelo substring
-        const marcaMatch  = b.marca.toLowerCase() === v.marca.toLowerCase();
-        const modeloMatch = v.modelo.toLowerCase().includes(b.modelo.toLowerCase()) || b.modelo.toLowerCase().includes(v.modelo.toLowerCase());
-        if (!marcaMatch && !modeloMatch) return;
+    try {
+      const red = await window.fbLoadDatosRed();
+      if (!red) return;
 
-        _matchCounter++;
-        const agencia = _agenciasRed[_matchCounter % _agenciasRed.length];
-        const comisionPct = parseFloat(v.comision) || 2;
-        const precioNum = parseInt(v.precio.replace(/\D/g,'')) || 0;
-        const comisionMonto = precioNum > 0 ? '$' + Math.round(precioNum * comisionPct / 100).toLocaleString('es-AR') : v.comision;
+      const todosLosStocks     = red.stockGlobal    || [];
+      const todasLasBusquedas  = red.busquedasGlobal || [];
+      const miAgencia          = _currentUser.nombre;
+      const nuevosMatches      = [];
 
-        nuevosMatches.push({
-          id: 'm' + Date.now() + '_' + _matchCounter,
-          _stockId: v.id,
-          _busqId: b.id,
-          vehiculo: v.marca + ' ' + v.modelo,
-          detalle: (v.version || v.transmision) + ' · ' + v.anio + (v.km ? ' · ' + v.km + ' km' : ''),
-          precio: '$' + v.precio,
-          agenciaVendedora: (_currentUser ? _currentUser.nombre : 'Tu agencia') + ' (vos)',
-          contactoVendedor: 'Tu agencia',
-          agenciaCompradora: agencia,
-          contactoComprador: 'Contacto disponible',
-          cliente: b.cliente || 'Cliente de ' + agencia,
-          fechaMatch: new Date().toLocaleDateString('es-AR', {day:'2-digit', month:'short', year:'numeric'}),
-          comision: comisionMonto,
-          estado: 'pendiente'
+      // Cruzar mi stock con búsquedas de OTRAS agencias
+      _stockData.forEach(v => {
+        todasLasBusquedas.forEach(b => {
+          if (b.agencia === miAgencia) return; // misma agencia, ignorar
+          const yaMatcheado = seguimientoData.some(m => m._stockId === v.id && m._busqId === b.id);
+          if (yaMatcheado) return;
+          if (_esMatch(v, b)) {
+            nuevosMatches.push(_crearMatch(v, b, miAgencia, b.agencia));
+          }
         });
       });
-    });
 
-    if (nuevosMatches.length > 0) {
-      seguimientoData.unshift(...nuevosMatches);
-      actualizarStatsSeguimiento();
-      _renderMatchesPage(nuevosMatches);
-      _updateDashboard();
-      const matchN = nuevosMatches.length;
-      showToast('🎯 ¡' + matchN + ' match' + (matchN > 1 ? 'es' : '') + ' encontrado' + (matchN > 1 ? 's' : '') + '! Desbloqueá para ver los datos', 'match', 5000);
+      // Cruzar mi búsqueda con stock de OTRAS agencias
+      _busquedaData.forEach(b => {
+        todosLosStocks.forEach(v => {
+          if (v.agencia === miAgencia) return; // misma agencia, ignorar
+          const yaMatcheado = seguimientoData.some(m => m._stockId === v.id && m._busqId === b.id);
+          if (yaMatcheado) return;
+          if (_esMatch(v, b)) {
+            nuevosMatches.push(_crearMatch(v, b, v.agencia, miAgencia));
+          }
+        });
+      });
+
+      if (nuevosMatches.length > 0) {
+        seguimientoData.unshift(...nuevosMatches);
+        actualizarStatsSeguimiento();
+        _renderMatchesPage(nuevosMatches);
+        _updateDashboard();
+        const n = nuevosMatches.length;
+        showToast('🎯 ¡' + n + ' match' + (n>1?'es':'') + ' encontrado' + (n>1?'s':'') + '!', 'match', 5000);
+
+        // Guardar matches en Firebase para que el admin los vea
+        _guardarMatchesEnFirebase(nuevosMatches);
+      }
+    } catch(e) {
+      console.warn('Match error:', e);
     }
+  }
+
+  function _esMatch(vehiculo, busqueda) {
+    const marcaOk  = vehiculo.marca.toLowerCase().trim() === busqueda.marca.toLowerCase().trim();
+    const modeloOk = vehiculo.modelo.toLowerCase().trim() === busqueda.modelo.toLowerCase().trim();
+    const anio     = parseInt(vehiculo.anio) || 0;
+    const anioD    = parseInt(busqueda.anioD) || 0;
+    const anioH    = parseInt(busqueda.anioH) || 9999;
+    const anioOk   = !anioD || (anio >= anioD && anio <= anioH);
+    return marcaOk && modeloOk && anioOk;
+  }
+
+  function _crearMatch(vehiculo, busqueda, agenciaVendedora, agenciaCompradora) {
+    _matchCounter++;
+    const comisionPct = parseFloat(vehiculo.comision) || 2;
+    const precioNum   = parseInt((vehiculo.precio||'').replace(/\D/g,'')) || 0;
+    const comisionMonto = precioNum > 0 ? '$' + Math.round(precioNum * comisionPct / 100).toLocaleString('es-AR') : comisionPct + '%';
+    return {
+      id: 'm' + Date.now() + '_' + _matchCounter,
+      _stockId: vehiculo.id,
+      _busqId:  busqueda.id,
+      vehiculo: vehiculo.marca + ' ' + vehiculo.modelo,
+      detalle:  (vehiculo.version || vehiculo.transmision || '') + ' · ' + vehiculo.anio + (vehiculo.km ? ' · ' + vehiculo.km + ' km' : ''),
+      precio:   vehiculo.precio ? '$' + vehiculo.precio : '—',
+      agenciaVendedora,
+      agenciaCompradora,
+      contactoVendedor:  agenciaVendedora === (_currentUser ? _currentUser.nombre : '') ? 'Tu agencia' : agenciaVendedora,
+      contactoComprador: agenciaCompradora === (_currentUser ? _currentUser.nombre : '') ? 'Tu agencia' : agenciaCompradora,
+      cliente:   busqueda.cliente || '',
+      fechaMatch: new Date().toLocaleDateString('es-AR', {day:'2-digit', month:'short', year:'numeric'}),
+      comision:  comisionMonto,
+      estado:   'pendiente'
+    };
+  }
+
+  async function _guardarMatchesEnFirebase(nuevosMatches) {
+    if (!window.fbSaveClientData || !window.fbLoadDatosRed) return;
+    try {
+      const red = await window.fbLoadDatosRed();
+      const matchesExistentes = red ? (red.matchesGlobal || []) : [];
+      nuevosMatches.forEach(m => matchesExistentes.push({
+        ...m,
+        agencia1: m.agenciaVendedora,
+        agencia2: m.agenciaCompradora,
+        fecha: new Date().toLocaleDateString('es-AR')
+      }));
+      await window.fbSaveClientData('matchesGlobal', matchesExistentes);
+    } catch(e) { console.warn('guardarMatches error:', e); }
   }
 
   function _renderMatchesPage(matches) {
