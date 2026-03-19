@@ -6024,19 +6024,89 @@
     if (!screen) return;
     screen.style.transition = 'opacity 0.35s ease';
     screen.style.opacity = '0';
-    setTimeout(() => { screen.style.display = 'none'; screen.style.opacity = '1'; }, 350);
-    // Cargar datos de la red desde Firebase
-    if (window.fbLoadDatosRed) {
-      window.fbLoadDatosRed().then(red => {
-        if (red && red.agencias) renderRed(red.agencias);
-      });
-      // Listener en tiempo real
-      if (window.fbListenDatos) {
-        window.fbListenDatos(red => {
-          if (red && red.agencias) renderRed(red.agencias);
-        });
+    setTimeout(async () => {
+      screen.style.display = 'none';
+      screen.style.opacity = '1';
+
+      // Cargar datos de la red desde Firebase
+      if (window.fbLoadDatosRed) {
+        try {
+          const red = await window.fbLoadDatosRed();
+          if (!red) return;
+
+          // Cargar agencias en la red
+          if (red.agencias) renderRed(red.agencias);
+
+          // ── Cargar stock y búsquedas propias de esta agencia ──
+          const miEmail = _currentUser ? _currentUser.email : null;
+          const miNombre = _currentUser ? _currentUser.nombre : null;
+
+          if (miEmail || miNombre) {
+            // Stock propio
+            const miStock = (red.stockGlobal || []).filter(v =>
+              v.emailAgencia === miEmail || v.agencia === miNombre
+            );
+            if (miStock.length > 0) {
+              _stockData = miStock;
+              // Limpiar tabla y re-renderizar
+              const tbody = document.getElementById('stockTbody');
+              if (tbody) {
+                tbody.innerHTML = '';
+                _stockData.forEach(v => _renderStockRow(v));
+              }
+            }
+
+            // Búsquedas propias
+            const misBusquedas = (red.busquedasGlobal || []).filter(b =>
+              b.emailAgencia === miEmail || b.agencia === miNombre
+            );
+            if (misBusquedas.length > 0) {
+              _busquedaData = misBusquedas;
+              _renderBusquedasTable();
+            }
+
+            // Matches propios
+            const misMatches = (red.matchesGlobal || []).filter(m =>
+              m.agencia1 === miNombre || m.agencia2 === miNombre
+            );
+            if (misMatches.length > 0) {
+              // Add to seguimiento only if not already there
+              misMatches.forEach(m => {
+                if (!seguimientoData.find(s => s.id === m.id)) {
+                  seguimientoData.unshift(m);
+                }
+              });
+              actualizarStatsSeguimiento();
+              _renderMatchesPage(misMatches);
+            }
+          }
+
+          _updateDashboard();
+
+          // Listener en tiempo real
+          if (window.fbListenDatos) {
+            window.fbListenDatos(red => {
+              if (red && red.agencias) renderRed(red.agencias);
+              // Check for new matches
+              if (red && red.matchesGlobal && miNombre) {
+                const nuevos = (red.matchesGlobal || []).filter(m =>
+                  (m.agencia1 === miNombre || m.agencia2 === miNombre) &&
+                  !seguimientoData.find(s => s.id === m.id)
+                );
+                if (nuevos.length > 0) {
+                  nuevos.forEach(m => seguimientoData.unshift(m));
+                  actualizarStatsSeguimiento();
+                  _renderMatchesPage(nuevos);
+                  showToast('🎯 ¡Nuevo match encontrado!', 'match', 5000);
+                }
+              }
+            });
+          }
+        } catch(e) {
+          console.warn('enterDashboard error:', e);
+        }
       }
-    }
+    }, 350);
   }
 
   function doLogout() {
