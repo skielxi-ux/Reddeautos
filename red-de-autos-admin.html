@@ -468,10 +468,7 @@
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="5" r="3"/><circle cx="4" cy="19" r="3"/><circle cx="20" cy="19" r="3"/><line x1="12" y1="8" x2="4" y2="16"/><line x1="12" y1="8" x2="20" y2="16"/></svg>
         Matches
       </button>
-      <button class="nav-item" onclick="showAdminPage('vehiculos',this)">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="1" y="3" width="15" height="13"/><polygon points="16,8 20,8 23,11 23,16 16,16"/><circle cx="5.5" cy="18.5" r="2.5"/><circle cx="18.5" cy="18.5" r="2.5"/></svg>
-        Vehículos
-      </button>
+
 
       <div class="nav-section">Financiero</div>
       <button class="nav-item" onclick="showAdminPage('ingresos',this)">
@@ -2055,16 +2052,17 @@ function renderMatches() {
   const activos=matchesData.filter(m=>m.estado==='pendiente').length;
   const concret=matchesData.filter(m=>m.estado==='concretada').length;
   const tasa=total>0?Math.round(concret/total*100):0;
-  document.getElementById('matchTotal').textContent=total;
+  document.getElementById('matchTotal').textContent=concret;
   document.getElementById('matchActivos').textContent=activos;
   document.getElementById('matchConcretados').textContent=concret;
   document.getElementById('matchTasa').textContent=tasa+'%';
-  if(total===0){tbody.innerHTML='<tr><td colspan="6"><div class="empty-state"><div class="empty-state-title">Sin matches generados</div></div></td></tr>';return;}
-  tbody.innerHTML=matchesData.map(m=>`<tr data-id="${m.id}">
+  const concretados=matchesData.filter(m=>m.estado==='concretada');
+  if(concretados.length===0){tbody.innerHTML='<tr><td colspan="6"><div class="empty-state"><div class="empty-state-title">Sin matches concretados aún</div><div class="empty-state-sub">Los matches que se concreten aparecerán aquí.</div></div></td></tr>';return;}
+  tbody.innerHTML=concretados.map(m=>`<tr data-id="${m.id}">
     <td><div style="font-weight:600">${m.vehiculo}</div></td>
     <td>${m.agenciaVendedora}</td><td>${m.agenciaCompradora}</td>
     <td>${m.fecha||'—'}</td>
-    <td>${{pendiente:'<span class="badge badge-yellow">Pendiente</span>',concretada:'<span class="badge badge-green">Concretada</span>',cancelada:'<span class="badge badge-red">Cancelada</span>'}[m.estado]}</td>
+    <td><span class="badge badge-green">Concretada</span></td>
     <td><button class="btn btn-outline btn-sm" onclick="verMatch(${m.id})" style="font-size:11px">Ver</button></td>
   </tr>`).join('');
 }
