@@ -1216,6 +1216,26 @@
       if (user && window._onFbAuthReady) window._onFbAuthReady(user);
     });
 
+    // ── Guardar datos del sistema desde el cliente ──
+    window.fbSaveClientData = async function(field, value) {
+      try {
+        const { doc, getDoc, setDoc } = await import("https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js");
+        const snap = await getDoc(doc(db, 'sistema', 'datos'));
+        if (snap.exists()) {
+          await setDoc(doc(db, 'sistema', 'datos'), {
+            ...snap.data(),
+            [field]: JSON.stringify(value),
+            updatedAt: Date.now()
+          });
+          return true;
+        }
+        return false;
+      } catch(e) {
+        console.warn('fbSaveClientData error:', e);
+        return false;
+      }
+    };
+
     console.log('🔥 Firebase Cliente inicializado');
   </script>
 
@@ -5688,7 +5708,7 @@
     if (!comentario) { alert('Por favor escribí un comentario.'); return; }
 
     // Guardar en Firebase
-    if (window.fbLoadDatosRed && window.fbSaveAll) {
+    if (window.fbLoadDatosRed && window._db) {
       const btn = document.querySelector('#modalValorar .btn-primary');
       if (btn) { btn.textContent = 'Enviando...'; btn.disabled = true; }
 
@@ -5710,19 +5730,10 @@
           agencias[idx].calificacion = (total / agencias[idx].resenas.length).toFixed(1);
         }
         // Guardar
-        const { getFirestore, doc, setDoc } = await import("https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js");
-        const snap = await (await import("https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js")).getDoc(doc(window._db, 'sistema', 'datos'));
-        if (snap.exists()) {
-          await setDoc(doc(window._db, 'sistema', 'datos'), {
-            ...snap.data(),
-            agencias: JSON.stringify(agencias),
-            updatedAt: Date.now()
-          });
-        }
+        await window.fbSaveClientData('agencias', agencias);
         if (btn) { btn.textContent = 'Enviar valoración'; btn.disabled = false; }
         closeModal('modalValorar');
         showToast('¡Valoración enviada! Gracias por tu opinión.', 'success');
-        // Refrescar tabla
         renderRed(agencias);
       }).catch(e => {
         if (btn) { btn.textContent = 'Enviar valoración'; btn.disabled = false; }
@@ -5752,7 +5763,7 @@
     if (!motivo) { alert('Seleccioná un motivo.'); return; }
     if (!comentario) { alert('Escribí un comentario describiendo lo que pasó.'); return; }
 
-    if (window.fbLoadDatosRed) {
+    if (window.fbLoadDatosRed && window._db) {
       const btn = document.querySelector('#modalDenunciarRed .btn');
       if (btn) { btn.textContent = 'Enviando...'; btn.disabled = true; }
 
@@ -5768,15 +5779,7 @@
           estado: 'pendiente'
         });
 
-        const { doc, setDoc } = await import("https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js");
-        const snap = await (await import("https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js")).getDoc(doc(window._db, 'sistema', 'datos'));
-        if (snap.exists()) {
-          await setDoc(doc(window._db, 'sistema', 'datos'), {
-            ...snap.data(),
-            denuncias: JSON.stringify(denuncias),
-            updatedAt: Date.now()
-          });
-        }
+        await window.fbSaveClientData('denuncias', denuncias);
         if (btn) { btn.textContent = 'Enviar denuncia'; btn.disabled = false; }
         closeModal('modalDenunciarRed');
         showToast('Denuncia enviada. La revisaremos en 48hs.', 'info');
