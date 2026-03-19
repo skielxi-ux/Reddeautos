@@ -3510,6 +3510,24 @@
     }
     credits--;
     updateCreditDisplays();
+
+    // Mark match as desbloqueado in Firebase so vendedor can see it in seguimiento
+    const matchId = bodyId.replace('matchBody_', '');
+    if (window.fbSaveClientData && window.fbLoadDatosRed) {
+      window.fbLoadDatosRed().then(red => {
+        const matches = red ? (red.matchesGlobal || []) : [];
+        const idx = matches.findIndex(m => m.id === matchId);
+        if (idx >= 0) {
+          matches[idx].desbloqueado = true;
+          matches[idx].desbloqueadoPor = _currentUser ? _currentUser.nombre : '';
+        }
+        // Also update seguimientoData locally
+        const local = seguimientoData.find(m => m.id === matchId);
+        if (local) local.desbloqueado = true;
+        window.fbSaveClientData('matchesGlobal', matches);
+      }).catch(e => console.warn('unlock error:', e));
+    }
+
     if (agenciaNombre) {
       showUnlockedContactDynamic(bodyId, agenciaNombre, comisionMonto);
     } else {
@@ -5469,8 +5487,28 @@
       container.innerHTML = '<div style="text-align:center;padding:48px 24px;color:var(--gray-400)"><svg width=\"48\" height=\"48\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"1.5\" style=\"margin-bottom:12px;opacity:0.3\"><path d=\"M9 11l3 3L22 4\"/><path d=\"M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11\"/></svg><div style=\"font-size:14px;font-weight:600;margin-bottom:6px\">Sin operaciones en seguimiento</div><div style=\"font-size:12px;line-height:1.6\">Agregá vehículos al stock y búsquedas para generar matches que aparecerán acá.</div></div>';
       return;
     }
-    container.innerHTML = seguimientoData.map(m => {
-      const soyVendedor = rolCheckbox ? rolCheckbox.checked : true;
+    const miNombre = _currentUser ? _currentUser.nombre : '';
+
+    // Filter matches based on role and plan
+    // Free vendedor: NO aparece en seguimiento hasta que comprador desbloquee
+    // Free comprador: aparece bloqueado
+    // Premium: ambos aparecen con datos completos
+    const matchesFiltrados = seguimientoData.filter(m => {
+      const soyVendedor = m.agenciaVendedora === miNombre || m.agencia1 === miNombre;
+      const soyComprador = m.agenciaCompradora === miNombre || m.agencia2 === miNombre;
+      if (isPremium) return true; // Premium: siempre aparece
+      if (soyComprador) return true; // Comprador: siempre aparece (para desbloquear)
+      if (soyVendedor && m.desbloqueado) return true; // Vendedor: solo si comprador desbloqueó
+      return false; // Vendedor free sin desbloqueo: no aparece en seguimiento
+    });
+
+    if (matchesFiltrados.length === 0) {
+      container.innerHTML = '<div style="text-align:center;padding:48px 24px;color:var(--gray-400)"><svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" style="margin-bottom:12px;opacity:0.3"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg><div style="font-size:14px;font-weight:600;margin-bottom:6px">Sin operaciones en seguimiento</div><div style="font-size:12px;line-height:1.6">Los matches desbloqueados aparecerán acá.</div></div>';
+      return;
+    }
+
+    container.innerHTML = matchesFiltrados.map(m => {
+      const soyVendedor = m.agenciaVendedora === miNombre || m.agencia1 === miNombre;
 
       const estadoBadge = {
         pendiente:   `<span style="display:inline-flex;align-items:center;gap:5px;background:#FFFBEB;color:#B45309;border:1px solid #FDE68A;border-radius:20px;padding:3px 10px;font-size:11px;font-weight:700">⏳ Pendiente de cierre</span>`,
