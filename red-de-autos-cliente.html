@@ -1172,20 +1172,37 @@
         const snap = await getDoc(doc(db, 'sistema', 'datos'));
         if (!snap.exists()) return null;
         const d = snap.data();
+        // Safe JSON parse helper
+        const safeparse = (val) => {
+          if (!val) return [];
+          if (Array.isArray(val)) return val;
+          if (typeof val === 'string') { try { return JSON.parse(val); } catch(e) { return []; } }
+          return [];
+        };
+        const safeparseObj = (val) => {
+          if (!val) return {};
+          if (typeof val === 'object' && !Array.isArray(val)) return val;
+          if (typeof val === 'string') { try { return JSON.parse(val); } catch(e) { return {}; } }
+          return {};
+        };
         return {
-          agencias:        JSON.parse(d.agencias        || '[]'),
-          matchesData:     JSON.parse(d.matchesData     || '[]'),
-          vehiculos:       JSON.parse(d.vehiculos       || '[]'),
-          operaciones:     JSON.parse(d.operaciones     || '[]'),
-          codigos:         JSON.parse(d.codigos         || '[]'),
-          config:          JSON.parse(d.config          || '{}'),
-          notificaciones:  JSON.parse(d.notificaciones  || '[]'),
-          denuncias:       JSON.parse(d.denuncias       || '[]'),
-          stockGlobal:     JSON.parse(d.stockGlobal     || '[]'),
-          busquedasGlobal: JSON.parse(d.busquedasGlobal || '[]'),
-          matchesGlobal:   JSON.parse(d.matchesGlobal   || '[]'),
+          agencias:        safeparse(d.agencias),
+          matchesData:     safeparse(d.matchesData),
+          vehiculos:       safeparse(d.vehiculos),
+          operaciones:     safeparse(d.operaciones),
+          codigos:         safeparse(d.codigos),
+          config:          safeparseObj(d.config),
+          notificaciones:  safeparse(d.notificaciones),
+          denuncias:       safeparse(d.denuncias),
+          stockGlobal:     safeparse(d.stockGlobal),
+          busquedasGlobal: safeparse(d.busquedasGlobal),
+          matchesGlobal:   safeparse(d.matchesGlobal),
+          solicitudes:     safeparse(d.solicitudes),
+          pagos:           safeparse(d.pagos),
         };
       } catch(e) { console.warn('fbLoadDatosRed error:', e); return null; }
+    };
+    // REMOVE OLD RETURN - replaced abovell; }
     };
 
     // ── Listener en tiempo real de datos del sistema ──
