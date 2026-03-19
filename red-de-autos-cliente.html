@@ -5670,8 +5670,8 @@
         <td><span class="badge badge-green"><span class="status-dot dot-green"></span>Activo</span></td>
         <td>
           <div style="display:flex;gap:6px">
-            <button class="btn btn-outline btn-sm" style="font-size:11px" onclick="verResenias('${a.nombre}', ${JSON.stringify(a.resenas||[]).replace(/'/g,'\'')})">
-              Ver reseñas ${(a.resenas||[]).length > 0 ? `<span style='background:var(--blue);color:#fff;border-radius:20px;padding:1px 6px;font-size:10px;margin-left:3px'>${a.resenas.length}</span>` : ''}
+            <button class="btn btn-outline btn-sm" style="font-size:11px" onclick="verReseniasNombre('${a.nombre}')">
+              Ver reseñas ${(a.resenas||[]).length > 0 ? '<span style=\'background:var(--blue);color:#fff;border-radius:20px;padding:1px 6px;font-size:10px;margin-left:3px\'>' + (a.resenas||[]).length + '</span>' : ''}
             </button>
             <button class="btn btn-outline btn-sm" style="font-size:11px;color:var(--yellow);border-color:var(--yellow)" onclick="abrirValorar('${a.nombre}')">
               ★ Valorar
@@ -5686,6 +5686,17 @@
   }
 
   // ── VER RESEÑAS ──
+  window.verReseniasNombre = function(nombre) {
+    if (window.fbLoadDatosRed) {
+      window.fbLoadDatosRed().then(red => {
+        const ag = (red && red.agencias || []).find(a => a.nombre === nombre);
+        window.verResenias(nombre, ag ? (ag.resenas || []) : []);
+      });
+    } else {
+      window.verResenias(nombre, []);
+    }
+  };
+
   window.verResenias = function(nombre, resenas) {
     document.getElementById('reseniasTitle').textContent = 'Reseñas · ' + nombre;
     const lista = document.getElementById('reseniasLista');
