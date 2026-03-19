@@ -1417,7 +1417,13 @@ function verAgencia(id) {
       <div><div class="detail-field-lbl">Estado</div>${a.estado==='activo'?'<span class="badge badge-green"><span class="status-dot dot-green"></span>Activo</span>':'<span class="badge badge-red"><span class="status-dot dot-red"></span>Suspendido</span>'}</div>
       <div><div class="detail-field-lbl">Contacto</div><div class="detail-field-val">${a.contacto||'—'}</div></div>
       <div><div class="detail-field-lbl">Email</div><div class="detail-field-val">${a.email||'—'}</div></div>
-      <div><div class="detail-field-lbl">Teléfono</div><div class="detail-field-val">${a.tel||'—'}</div></div>
+      <div>
+        <div class="detail-field-lbl">Teléfono / WhatsApp</div>
+        <div style="display:flex;align-items:center;gap:8px;margin-top:4px">
+          <input class="form-control" id="editTel_${a.id}" value="${a.tel||''}" placeholder="+54 9 381 000 0000" style="font-size:12px;padding:6px 10px;flex:1">
+          <button class="btn btn-outline btn-sm" style="font-size:11px;white-space:nowrap" onclick="guardarTelAgencia(${a.id})">Guardar</button>
+        </div>
+      </div>
       <div><div class="detail-field-lbl">Fecha de registro</div><div class="detail-field-val">${a.fechaRegistro}</div></div>
     </div>
     <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;margin-bottom:20px">
@@ -1454,6 +1460,15 @@ function cambiarPlan(id, plan) {
   const a=agencias.find(x=>x.id===id); if(!a) return;
   a.plan=plan; closeModal('modalVerAgencia'); refreshData();
   showToast(`Plan actualizado a ${plan==='premium'?'Premium':'Free'}`,plan==='premium'?'yellow':'gray');
+}
+
+function guardarTelAgencia(id) {
+  const a=agencias.find(x=>x.id===id); if(!a) return;
+  const input=document.getElementById('editTel_'+id);
+  if(!input) return;
+  a.tel=input.value.trim();
+  refreshData();
+  showToast('Teléfono actualizado','green');
 }
 
 function abrirAgregarCreditos(id) {

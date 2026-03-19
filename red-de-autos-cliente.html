@@ -1089,7 +1089,7 @@
     };
 
     // ── Registro con Firebase ──
-    window.fbClientRegister = async function(email, pass, nombre, ciudad, iniciales, codigo) {
+    window.fbClientRegister = async function(email, pass, nombre, ciudad, iniciales, codigo, tel) {
       try {
         const cred = await createUserWithEmailAndPassword(auth, email, pass);
         await updateProfile(cred.user, { displayName: nombre });
@@ -1099,6 +1099,7 @@
         await setDoc(fbDoc(db, 'agencias', cred.user.uid), {
           nombre, ciudad, iniciales,
           email,
+          tel: tel || '',
           plan: 'free',
           credits: 0,
           uid: cred.user.uid,
@@ -1120,6 +1121,7 @@
             nombre, ciudad,
             contacto: nombre,
             email,
+            tel: tel || '',
             codigo: codigo || '',
             fecha: new Date().toLocaleDateString('es-AR'),
             estado: 'pendiente',
@@ -6567,10 +6569,12 @@
     const ini     = nombre.split(' ').filter(Boolean).slice(0,2).map(w=>w[0]).join('').toUpperCase() || 'AG';
     const codigo  = document.getElementById('regCodigo').value.trim().toUpperCase();
 
+    const tel = document.getElementById('regTelefono')?.value.trim() || '';
+
     if (window.fbClientRegister) {
       const regBtn = document.querySelector('.reg-step.active .btn-primary');
       if (regBtn) { regBtn.textContent = 'Creando cuenta...'; regBtn.disabled = true; }
-      window.fbClientRegister(email, pwd, nombre, ciudad, ini, codigo).then(res => {
+      window.fbClientRegister(email, pwd, nombre, ciudad, ini, codigo, tel).then(res => {
         if (regBtn) { regBtn.textContent = 'Crear cuenta'; regBtn.disabled = false; }
         if (!res.ok) { alert(res.msg); return; }
         // Mark code as used in Firestore (best effort)
