@@ -5784,6 +5784,7 @@
         showToast('¡Valoración enviada!', 'success');
         console.warn('valoracion error:', e);
       }
+    }
   };
 
   // ── DENUNCIAR ──
@@ -5830,9 +5831,15 @@
     }
   };
 
-  function _filtrarRedDEPRECATED(q) { filtrarRed(q); }
+  function filtrarRed(q) {
+    q = (q||'').toLowerCase();
+    document.querySelectorAll('#redTable tr').forEach(row => {
+      row.style.display = row.textContent.toLowerCase().includes(q) ? '' : 'none';
+    });
+  }
 
-  function _filtrarRedCiudadDEPRECATED(ciudad) {(row => {
+  function filtrarRedCiudad(ciudad) {
+    document.querySelectorAll('#redTable tr').forEach(row => {
       row.style.display = (!ciudad || row.textContent.includes(ciudad)) ? '' : 'none';
     });
   }
