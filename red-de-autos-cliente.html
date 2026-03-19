@@ -4143,43 +4143,68 @@
     const container = document.getElementById('matchesContainer');
     if (!container) return;
 
-    // Remove empty state
     const emptyState = container.querySelector('[style*="text-align:center"]');
     if (emptyState && matches.length > 0) container.innerHTML = '';
 
+    const miNombre = _currentUser ? _currentUser.nombre : '';
+
     matches.forEach(m => {
+      // Determine role: vendedor (tiene el auto) o comprador (hizo la búsqueda)
+      const soyVendedor = m.agenciaVendedora === miNombre || m.agencia1 === miNombre;
+      const soyComprador = m.agenciaCompradora === miNombre || m.agencia2 === miNombre;
+
       const card = document.createElement('div');
       card.className = 'match-card';
       card.id = 'matchPageCard_' + m.id;
-      const timerClass = isPremium ? 'timer-badge timer-instant' : 'timer-badge timer-delay';
-      const timerText  = isPremium ? '⚡ Match instantáneo' : '⏳ Procesado en 3 días';
 
-      card.innerHTML = `
-        <div class="match-card-header">
-          <div class="match-car-thumb" style="background:var(--red-light);display:flex;align-items:center;justify-content:center">
-            <svg width="26" height="16" viewBox="0 0 26 16" fill="none" stroke="var(--red)" stroke-width="1.5"><rect x="1" y="3" width="24" height="9" rx="2"/><circle cx="6" cy="12" r="2.5"/><circle cx="20" cy="12" r="2.5"/><path d="M4 3L6 0h14l2 3"/></svg>
-          </div>
-          <div class="match-info">
-            <div class="match-car-name">${m.vehiculo}</div>
-            <div class="match-car-detail">${m.detalle}</div>
-          </div>
-          <span class="${timerClass}">${timerText}</span>
-          <div style="font-size:15px;font-weight:700;color:var(--red);flex-shrink:0">${m.precio}</div>
-        </div>
-        <div class="match-card-body" id="matchBody_${m.id}">
-          <div class="locked-overlay">
-            <div class="lock-icon">
-              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
-            </div>
-            <div class="locked-text">Datos del comprador bloqueados</div>
-            <div class="locked-sub">Agencia interesada: <strong>${m.agenciaCompradora}</strong></div>
-            <div class="locked-sub" style="margin-top:2px">Comisión ofrecida: <strong style="color:var(--green)">${m.comision}</strong></div>
-            <button class="btn btn-primary btn-sm" style="margin-top:8px" onclick="unlockMatch('matchBody_${m.id}','','${m.agenciaCompradora}','${m.comision}')">
-              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 9.9-1"/></svg>
-              Desbloquear (1 crédito)
-            </button>
-          </div>
-        </div>`;
+      // Build card body based on role and plan
+      let bodyHTML = '';
+
+      if (isPremium) {
+        // PREMIUM: ambos ven los datos completos
+        const otraAgencia = soyVendedor ? m.agenciaCompradora : m.agenciaVendedora;
+        bodyHTML = '<div class="agency-contact">'
+          + '<div class="contact-row"><span class="contact-label">Match con</span><span class="contact-value" style="font-weight:700;color:var(--red)">' + otraAgencia + '</span></div>'
+          + '<div class="contact-row"><span class="contact-label">Vehículo</span><span class="contact-value">' + m.vehiculo + '</span></div>'
+          + '<div class="contact-row"><span class="contact-label">Comisión</span><span class="contact-value" style="color:var(--green);font-weight:700">' + m.comision + '</span></div>'
+          + '<div style="margin-top:8px;padding:10px;background:var(--green-light);border:1px solid #86EFAC;border-radius:var(--radius-sm);font-size:12px;color:var(--green);font-weight:600;text-align:center">⭐ Plan Premium · Datos visibles para ambas agencias</div>'
+          + '</div>';
+      } else if (soyVendedor && !soyComprador) {
+        // FREE VENDEDOR: solo aviso de pendiente, sin datos
+        bodyHTML = '<div style="text-align:center;padding:16px 8px">'
+          + '<div style="width:44px;height:44px;border-radius:50%;background:var(--yellow-light);display:flex;align-items:center;justify-content:center;margin:0 auto 12px">'
+          + '<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#CA8A04" stroke-width="2"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg>'
+          + '</div>'
+          + '<div style="font-weight:700;font-size:14px;color:var(--gray-900);margin-bottom:6px">Match encontrado para ' + m.vehiculo + '</div>'
+          + '<div style="font-size:12px;color:var(--gray-500);line-height:1.6;margin-bottom:12px">⏳ Pendiente de contacto por parte de la otra agencia</div>'
+          + '<div style="font-size:11px;color:var(--gray-400);background:var(--gray-50);border-radius:var(--radius-sm);padding:8px 12px">Cuando la agencia compradora desbloquee el match vas a poder coordinar la operación.</div>'
+          + '</div>';
+      } else {
+        // FREE COMPRADOR: bloqueado con opción de desbloquear
+        bodyHTML = '<div class="locked-overlay">'
+          + '<div class="lock-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg></div>'
+          + '<div class="locked-text">Datos del vendedor bloqueados</div>'
+          + '<div class="locked-sub">Agencia con el vehículo: <strong>' + m.agenciaVendedora + '</strong></div>'
+          + '<div class="locked-sub" style="margin-top:2px">Comisión ofrecida: <strong style="color:var(--green)">' + m.comision + '</strong></div>'
+          + '<button class="btn btn-primary btn-sm" style="margin-top:8px" onclick="unlockMatch(' + JSON.stringify('matchBody_'+m.id) + ',' + JSON.stringify('') + ',' + JSON.stringify(m.agenciaVendedora||'') + ',' + JSON.stringify(m.comision||'') + ')">'
+          + '<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 9.9-1"/></svg>'
+          + ' Desbloquear (1 crédito)</button>'
+          + '</div>';
+      }
+
+      card.innerHTML = '<div class="match-card-header">'
+        + '<div class="match-car-thumb" style="background:var(--red-light);display:flex;align-items:center;justify-content:center">'
+        + '<svg width="26" height="16" viewBox="0 0 26 16" fill="none" stroke="var(--red)" stroke-width="1.5"><rect x="1" y="3" width="24" height="9" rx="2"/><circle cx="6" cy="12" r="2.5"/><circle cx="20" cy="12" r="2.5"/><path d="M4 3L6 0h14l2 3"/></svg>'
+        + '</div>'
+        + '<div class="match-info">'
+        + '<div class="match-car-name">' + m.vehiculo + '</div>'
+        + '<div class="match-car-detail">' + (m.detalle||'') + '</div>'
+        + '</div>'
+        + '<span class="' + (isPremium?'timer-badge timer-instant':'timer-badge timer-delay') + '">' + (isPremium?'⚡ Premium':'⏳ Free') + '</span>'
+        + '<div style="font-size:15px;font-weight:700;color:var(--red);flex-shrink:0">' + (m.precio||'') + '</div>'
+        + '</div>'
+        + '<div class="match-card-body" id="matchBody_' + m.id + '">' + bodyHTML + '</div>';
+
       container.insertBefore(card, container.firstChild);
     });
   }
