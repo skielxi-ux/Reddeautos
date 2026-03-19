@@ -4030,13 +4030,58 @@
   let _matchCounter = 0;
   const _agenciasRed = ['AutoCentro Tucumán','Motors Norte','AutoGroup Sur','Premier Cars','Norte Automotores','El Cruce Automotores'];
 
+  // ── PERSISTENCIA LOCAL (backup contra pérdida de datos) ──
+  function _saveLocalData() {
+    if (!_currentUser) return;
+    const key = 'redautos_' + (_currentUser.email || 'unknown');
+    try {
+      localStorage.setItem(key, JSON.stringify({
+        stockData: _stockData,
+        busquedaData: _busquedaData,
+        seguimientoData: seguimientoData,
+        savedAt: Date.now()
+      }));
+    } catch(e) { console.warn('localStorage save error:', e); }
+  }
+
+  function _loadLocalData() {
+    if (!_currentUser) return false;
+    const key = 'redautos_' + (_currentUser.email || 'unknown');
+    try {
+      const raw = localStorage.getItem(key);
+      if (!raw) return false;
+      const d = JSON.parse(raw);
+      let loaded = false;
+      if (d.stockData && d.stockData.length > 0) {
+        _stockData = d.stockData;
+        const tbody = document.getElementById('stockTbody');
+        if (tbody) { tbody.innerHTML = ''; _stockData.forEach(v => _renderStockRow(v)); }
+        loaded = true;
+      }
+      if (d.busquedaData && d.busquedaData.length > 0) {
+        _busquedaData = d.busquedaData;
+        _renderBusquedasTable();
+        loaded = true;
+      }
+      if (d.seguimientoData && d.seguimientoData.length > 0) {
+        d.seguimientoData.forEach(m => {
+          if (!seguimientoData.find(s => s.id === m.id)) seguimientoData.unshift(m);
+        });
+        actualizarStatsSeguimiento();
+        loaded = true;
+      }
+      return loaded;
+    } catch(e) { console.warn('localStorage load error:', e); return false; }
+  }
+
   // ── GUARDAR STOCK Y BÚSQUEDAS EN FIREBASE ──
   async function _guardarStockEnFirebase(vehiculo) {
+    // Always save to localStorage first
+    _saveLocalData();
     if (!window.fbSaveClientData || !window.fbLoadDatosRed) return;
     try {
       const red = await window.fbLoadDatosRed();
       const stockGlobal = red ? (red.stockGlobal || []) : [];
-      // Remove old entries from same agencia+id if exist
       const filtered = stockGlobal.filter(v => v.id !== vehiculo.id);
       filtered.push({ ...vehiculo, agencia: _currentUser ? _currentUser.nombre : 'Desconocida', emailAgencia: _currentUser ? _currentUser.email : '' });
       await window.fbSaveClientData('stockGlobal', filtered);
@@ -4044,6 +4089,8 @@
   }
 
   async function _guardarBusquedaEnFirebase(busqueda) {
+    // Always save to localStorage first
+    _saveLocalData();
     if (!window.fbSaveClientData || !window.fbLoadDatosRed) return;
     try {
       const red = await window.fbLoadDatosRed();
@@ -4106,7 +4153,8 @@
         const n = nuevosMatches.length;
         showToast('🎯 ¡' + n + ' match' + (n>1?'es':'') + ' encontrado' + (n>1?'s':'') + '!', 'match', 5000);
 
-        // Guardar matches en Firebase para que el admin los vea
+        // Guardar en localStorage y Firebase
+        _saveLocalData();
         _guardarMatchesEnFirebase(nuevosMatches);
       }
     } catch(e) {
@@ -6317,7 +6365,11 @@
       screen.style.display = 'none';
       screen.style.opacity = '1';
 
-      // Cargar datos de la red desde Firebase
+      // 1. Cargar datos locales INMEDIATAMENTE (nunca se pierden)
+      _loadLocalData();
+      _updateDashboard();
+
+      // 2. Sincronizar con Firebase en segundo plano
       if (window.fbLoadDatosRed) {
         try {
           const red = await window.fbLoadDatosRed();
