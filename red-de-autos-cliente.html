@@ -5496,10 +5496,9 @@
     const matchesFiltrados = seguimientoData.filter(m => {
       const soyVendedor = m.agenciaVendedora === miNombre || m.agencia1 === miNombre;
       const soyComprador = m.agenciaCompradora === miNombre || m.agencia2 === miNombre;
-      if (isPremium) return true; // Premium: siempre aparece
-      if (soyComprador) return true; // Comprador: siempre aparece (para desbloquear)
-      if (soyVendedor && m.desbloqueado) return true; // Vendedor: solo si comprador desbloqueó
-      return false; // Vendedor free sin desbloqueo: no aparece en seguimiento
+      if (isPremium) return true; // Premium: siempre aparece para ambos
+      if (m.desbloqueado) return true; // Desbloqueado: aparece para ambos
+      return false; // Free sin desbloqueo: no aparece en seguimiento para nadie
     });
 
     if (matchesFiltrados.length === 0) {
