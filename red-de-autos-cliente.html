@@ -5700,7 +5700,7 @@
     });
   };
 
-  window.enviarValoracion = function() {
+  window.enviarValoracion = async function() {
     const nombre = document.getElementById('valorarAgenciaNombreHidden').value;
     const comentario = document.getElementById('valorarComentario').value.trim();
     const rating = window._valorarRating || 0;
@@ -5756,7 +5756,7 @@
     openModal('modalDenunciarRed');
   };
 
-  window.enviarDenunciaRed = function() {
+  window.enviarDenunciaRed = async function() {
     const nombre = document.getElementById('denunciarAgenciaNombreHidden').value;
     const motivo = document.getElementById('denunciarMotivo').value;
     const comentario = document.getElementById('denunciarComentario').value.trim();
