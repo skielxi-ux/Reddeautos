@@ -4504,50 +4504,7 @@
   </div>
 </div>
 
-<!-- Modal: Denunciar agencia desde Red -->
-<div id="modalDenunciarRed" class="modal-overlay" onclick="if(event.target===this)closeModal('modalDenunciarRed')">
-  <div class="modal" style="width:460px">
-    <div class="modal-header">
-      <div>
-        <div class="modal-title">Denunciar agencia</div>
-        <div style="font-size:12px;color:var(--gray-400);margin-top:2px" id="denunciarAgenciaNombre"></div>
-      </div>
-      <button class="modal-close" onclick="closeModal('modalDenunciarRed')">
-        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
-      </button>
-    </div>
-    <div class="modal-body">
-      <input type="hidden" id="denunciarAgenciaNombreHidden">
-      <div style="display:flex;align-items:flex-start;gap:10px;background:var(--red-light);border:1px solid #FECACA;border-radius:var(--radius-sm);padding:12px 14px;margin-bottom:18px">
-        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="var(--red)" stroke-width="2" style="flex-shrink:0;margin-top:1px"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
-        <p style="font-size:12px;color:#991B1B;line-height:1.6;margin:0">Esta denuncia será revisada por el equipo de Red de Autos en un plazo de 48hs. Las denuncias falsas pueden resultar en la suspensión de tu cuenta.</p>
-      </div>
-      <div class="form-group">
-        <label class="form-label">Motivo *</label>
-        <select class="form-control" id="denunciarMotivo">
-          <option value="">Seleccioná un motivo...</option>
-          <option>Incumplimiento de operación acordada</option>
-          <option>No pagó la comisión acordada</option>
-          <option>Precio publicado incorrecto</option>
-          <option>Información falsa sobre el vehículo</option>
-          <option>Comportamiento inapropiado</option>
-          <option>Otro motivo</option>
-        </select>
-      </div>
-      <div class="form-group">
-        <label class="form-label">Comentario *</label>
-        <textarea class="form-control" id="denunciarComentario" rows="4" placeholder="Describí con detalle qué pasó. Incluí fecha de la operación, lo acordado y lo que ocurrió realmente..."></textarea>
-      </div>
-      <div style="display:flex;gap:10px;margin-top:4px">
-        <button class="btn btn-outline" style="flex:1;justify-content:center" onclick="closeModal('modalDenunciarRed')">Cancelar</button>
-        <button class="btn" style="flex:2;justify-content:center;background:var(--red);color:#fff;border:none;font-family:'Poppins',sans-serif;font-size:13px;font-weight:500;cursor:pointer;border-radius:var(--radius-sm);padding:8px 16px;display:inline-flex;align-items:center;gap:6px" onclick="enviarDenunciaRed()">
-          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/></svg>
-          Enviar denuncia
-        </button>
-      </div>
-    </div>
-  </div>
-</div>
+
 
 </body>
 </html>`;
