@@ -4198,15 +4198,18 @@
           + '<div style="font-size:11px;color:var(--gray-400);background:var(--gray-50);border-radius:var(--radius-sm);padding:8px 12px">Cuando la agencia compradora desbloquee el match vas a poder coordinar la operación.</div>'
           + '</div>';
       } else {
-        // FREE COMPRADOR: bloqueado con opción de desbloquear
-        bodyHTML = '<div class="locked-overlay">'
-          + '<div class="lock-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg></div>'
-          + '<div class="locked-text">Datos del vendedor bloqueados</div>'
-          + '<div class="locked-sub">Agencia con el vehículo: <strong>' + m.agenciaVendedora + '</strong></div>'
-          + '<div class="locked-sub" style="margin-top:2px">Comisión ofrecida: <strong style="color:var(--green)">' + m.comision + '</strong></div>'
-          + '<button class="btn btn-primary btn-sm" style="margin-top:8px" onclick="unlockMatch(' + JSON.stringify('matchBody_'+m.id) + ',' + JSON.stringify('') + ',' + JSON.stringify(m.agenciaVendedora||'') + ',' + JSON.stringify(m.comision||'') + ')">'
-          + '<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 9.9-1"/></svg>'
-          + ' Desbloquear (1 crédito)</button>'
+        // FREE COMPRADOR: bloqueado, sin revelar nombre de agencia
+        bodyHTML = '<div style="text-align:center;padding:20px 16px">'
+          + '<div style="width:48px;height:48px;border-radius:50%;background:var(--red-light);display:flex;align-items:center;justify-content:center;margin:0 auto 14px">'
+          + '<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="var(--red)" stroke-width="2"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>'
+          + '</div>'
+          + '<div style="font-weight:700;font-size:14px;color:var(--gray-900);margin-bottom:8px">🎯 ¡Encontramos una agencia que tiene el auto que buscás!</div>'
+          + '<div style="font-size:13px;color:var(--gray-600);line-height:1.6;margin-bottom:6px">Desbloqueá el contacto con <strong>1 crédito</strong> para poder ponerte en contacto y continuar la operación conjunta.</div>'
+          + '<div style="font-size:12px;color:var(--green);font-weight:600;margin-bottom:14px">Comisión ofrecida: ' + m.comision + '</div>'
+          + '<button class="btn btn-primary" style="width:100%;justify-content:center" onclick="unlockMatch(' + JSON.stringify('matchBody_'+m.id) + ',' + JSON.stringify('') + ',' + JSON.stringify(m.agenciaVendedora||'') + ',' + JSON.stringify(m.comision||'') + ')">'
+          + '<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 9.9-1"/></svg>'
+          + ' Desbloquear contacto (1 crédito)</button>'
+          + '<div style="font-size:11px;color:var(--gray-400);margin-top:10px">El nombre y datos de la agencia se revelan después del desbloqueo.</div>'
           + '</div>';
       }
 
