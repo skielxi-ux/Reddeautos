@@ -5587,17 +5587,20 @@
     };
 
     if (window.fbSaveClientData && window.fbLoadDatosRed) {
+      // Always reload fresh from Firebase before saving to avoid overwriting others
       window.fbLoadDatosRed().then(red => {
         let gremioGlobal = red ? (red.gremioGlobal || []) : [];
         if (window._editingGremioId) {
-          // Update existing
+          // Update existing - only touch this one item
           const idx = gremioGlobal.findIndex(g => g.id === window._editingGremioId);
           if (idx >= 0) {
             gremioGlobal[idx] = { ...gremioGlobal[idx], ...gremioItem, id: window._editingGremioId };
+          } else {
+            gremioGlobal.unshift(gremioItem);
           }
           window._editingGremioId = null;
         } else {
-          // New publication
+          // New - add to existing list (don't replace)
           gremioGlobal.unshift(gremioItem);
         }
         return window.fbSaveClientData('gremioGlobal', gremioGlobal);
@@ -5789,6 +5792,7 @@
       return;
     }
     if (!confirm('¿Eliminar esta publicación de precio gremio?')) return;
+    // Always reload fresh from Firebase to preserve other agencies' publications
     window.fbLoadDatosRed().then(red => {
       const items = red ? (red.gremioGlobal || []) : [];
       const filtered = items.filter(g => g.id !== id);
