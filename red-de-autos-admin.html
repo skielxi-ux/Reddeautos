@@ -1685,6 +1685,14 @@ function revocarCodigo(id) {
   });
 }
 
+function eliminarCodigo(id) {
+  const c=codigos.find(x=>x.id===id); if(!c) return;
+  confirmar('Eliminar código','¿Eliminar definitivamente el código "'+c.codigo+'"? Esta acción no se puede deshacer.','Eliminar','var(--red)',()=>{
+    codigos=codigos.filter(x=>x.id!==id);
+    refreshData(); showToast('Código eliminado','red');
+  });
+}
+
 // ── PAGOS ──
 function actualizarMontoPago(tipo) {
   document.getElementById('pagoMonto').value = tipo==='premium' ? (config.premio||150000) : (config.credito||50000);
@@ -2131,8 +2139,9 @@ function renderCodigos() {
     <td style="display:flex;gap:6px">
       ${c.estado==='disponible'
         ?`<button class="btn btn-outline btn-sm" onclick="copiarCodigo('${c.codigo}')" style="font-size:11px">Copiar</button>
-           <button class="btn btn-outline btn-sm" onclick="revocarCodigo(${c.id})" style="font-size:11px;color:var(--red);border-color:var(--red)">Revocar</button>`
-        :'—'}
+           <button class="btn btn-outline btn-sm" onclick="revocarCodigo(${c.id})" style="font-size:11px;color:var(--yellow);border-color:var(--yellow)">Revocar</button>`
+        :''}
+      <button class="btn btn-outline btn-sm" onclick="eliminarCodigo(${c.id})" style="font-size:11px;color:var(--red);border-color:var(--red)" title="Eliminar definitivamente">🗑</button>
     </td>
   </tr>`).join('');
 }
